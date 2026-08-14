@@ -1159,36 +1159,20 @@ async function syncPlaylist() {
     return;
   }
   status.textContent = "正在同步歌单，请稍候…";
-  const target = `https://music.163.com/api/v6/playlist/detail?id=${id}&n=1000`;
-  const userProxy = $("#proxyInput").value.trim();
-  const proxies = userProxy ? [userProxy] : NETEASE_PROXY_FALLBACKS;
-  let data = null;
-  for (const proxy of proxies) {
-    try {
-      const response = await fetch(proxy + encodeURIComponent(target));
-      const text = await response.text();
-      const parsed = JSON.parse(text);
-      if (proxy.includes("allorigins.win/get")) {
-        data = JSON.parse(parsed.contents || "{}");
-      } else {
-        data = parsed;
-      }
-    } catch (error) {
-      continue;
-    }
-    const playlist = data && data.playlist;
-    if (!playlist || !Array.isArray(playlist.tracks)) continue;
-    lastSyncedTracks = playlist.tracks.map(track => ({
-      id: track.id,
-      title: track.name,
-      artist: (track.ar || []).map(artist => artist.name).join(" / ")
-    }));
-    const japaneseTracks = lastSyncedTracks.filter(track => isJapaneseText(`${track.title} ${track.artist}`));
-    renderSyncTracks();
-    status.textContent = `已同步“${playlist.name}”，共 ${lastSyncedTracks.length} 首，识别出 ${japaneseTracks.length} 首日语歌。`;
+  const data = await fetchNeteaseJson(`/playlist/detail?id=${id}&n=1000`);
+  const playlist = data && data.playlist;
+  if (!playlist || !Array.isArray(playlist.tracks)) {
+    status.textContent = "同步失败。网易云公开接口经常限制访问，可以换代理地址，或使用下方的文本导入。";
     return;
   }
-  status.textContent = "同步失败。网易云公开接口经常限制访问，可以换代理地址，或使用下方的文本导入。";
+  lastSyncedTracks = playlist.tracks.map(track => ({
+    id: track.id,
+    title: track.name,
+    artist: (track.ar || []).map(artist => artist.name).join(" / ")
+  }));
+  const japaneseTracks = lastSyncedTracks.filter(track => isJapaneseText(`${track.title} ${track.artist}`));
+  renderSyncTracks();
+  status.textContent = `已同步“${playlist.name}”，共 ${lastSyncedTracks.length} 首，识别出 ${japaneseTracks.length} 首日语歌。`;
 }
 
 function importSongListText() {
@@ -1258,8 +1242,7 @@ async function fetchLyricsForTrack(index) {
     return;
   }
   status.textContent = `正在获取 ${track.title} 的歌词…`;
-  const target = `https://music.163.com/api/song/lyric?id=${track.id}&lv=-1&kv=-1&tv=-1`;
-  const data = await fetchJsonViaProxies(target);
+  const data = await fetchNeteaseJson(`/lyric?id=${track.id}&lv=-1&kv=-1&tv=-1`);
   const parsedLines = parseLyricResponse(data);
   if (!parsedLines.length) {
     status.textContent = "歌词获取失败，请手动粘贴歌词。";
@@ -1356,12 +1339,39 @@ function importLyricsFromForm() {
   toast("歌词已保存，开始学习吧");
 }
 
+async function fetchWithTimeout(url, timeout = 8000, options = {}) {
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), timeout);
+  try {
+    return await fetch(url, Object.assign({}, options, { signal: controller.signal }));
+  } finally {
+    window.clearTimeout(timer);
+  }
+}
+
+async function fetchNeteaseJson(path) {
+  const publicBases = ["https://music.mcseekeri.com", "https://zm.wwoyun.cn"];
+  for (const base of publicBases) {
+    try {
+      const response = await fetchWithTimeout(base + path);
+      if (!response.ok) continue;
+      const data = await response.json();
+      if (data && (data.result || data.playlist || data.lrc || data.songs)) {
+        return data;
+      }
+    } catch (error) {
+      continue;
+    }
+  }
+  return fetchJsonViaProxies(`https://music.163.com${path}`);
+}
+
 async function fetchJsonViaProxies(target) {
   const userProxy = $("#proxyInput").value.trim();
   const proxies = userProxy ? [userProxy] : NETEASE_PROXY_FALLBACKS;
   for (const proxy of proxies) {
     try {
-      const response = await fetch(proxy + encodeURIComponent(target));
+      const response = await fetchWithTimeout(proxy + encodeURIComponent(target));
       const text = await response.text();
       const parsed = JSON.parse(text);
       if (proxy.includes("allorigins.win/get")) {
@@ -1423,15 +1433,19 @@ function lookupLocalWord(token) {
 
 async function lookupJishoWord(token) {
   try {
-    const response = await fetch(`https://jisho.org/api/v1/search/words?keyword=${encodeURIComponent(token)}`);
+    const response = await fetchWithTimeout("https://jotoba.de/api/search/words", 6000, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query: token, language: "English", no_english: false })
+    });
     if (!response.ok) return null;
     const data = await response.json();
-    const first = data && data.data && data.data[0];
+    const first = data && data.words && data.words[0];
     if (!first) return null;
     return {
       ja: token,
-      kana: (first.japanese && first.japanese[0] && first.japanese[0].reading) || "",
-      zh: (first.senses && first.senses[0] && first.senses[0].english_definitions || []).slice(0, 2).join(" / ")
+      kana: (first.reading && first.reading.kana) || "",
+      zh: (first.senses && first.senses[0] && first.senses[0].glosses || []).slice(0, 2).join(" / ")
     };
   } catch (error) {
     return null;
@@ -1505,8 +1519,7 @@ async function enrichLyricLines(lines) {
 }
 
 async function fetchAndParseSongLyrics(song) {
-  const target = `https://music.163.com/api/song/lyric?id=${song.id}&lv=-1&kv=-1&tv=-1`;
-  const data = await fetchJsonViaProxies(target);
+  const data = await fetchNeteaseJson(`/lyric?id=${song.id}&lv=-1&kv=-1&tv=-1`);
   const lines = parseLyricResponse(data);
   if (!lines.length) return null;
   return enrichLyricLines(lines);
@@ -1522,8 +1535,7 @@ async function searchSongs() {
   }
   status.textContent = "正在搜索网易云歌曲…";
   const searchQuery = artist ? `${query} ${artist}` : query;
-  const target = `https://music.163.com/api/search/get/web?s=${encodeURIComponent(searchQuery)}&type=1&limit=10`;
-  const data = await fetchJsonViaProxies(target);
+  const data = await fetchNeteaseJson(`/search?keywords=${encodeURIComponent(searchQuery)}&limit=10`);
   const songs = data && data.result && data.result.songs ? data.result.songs : [];
   lastSearchResults = songs.map(song => ({
     id: song.id,
