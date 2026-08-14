@@ -1213,6 +1213,16 @@ main {
   min-width: 0;
 }
 
+.search-panel {
+  margin-bottom: 14px;
+}
+
+.search-fields {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 10px;
+}
+
 .sync-body {
   display: grid;
   gap: 10px;
@@ -1240,6 +1250,33 @@ main {
   margin: 0;
   color: var(--muted);
   font-size: 13px;
+}
+
+.song-search-results {
+  display: grid;
+  gap: 8px;
+}
+
+.search-result {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px 14px;
+  align-items: center;
+  padding: 11px 13px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.search-result h4 {
+  margin: 0 0 3px;
+  font-size: 16px;
+}
+
+.search-result p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
 }
 
 .import-panel {
@@ -1814,6 +1851,10 @@ main {
   }
 
   .import-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .search-fields {
     grid-template-columns: 1fr;
   }
 }

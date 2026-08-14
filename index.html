@@ -167,6 +167,24 @@
         </div>
       </div>
 
+      <article class="panel sync-panel search-panel">
+        <div class="panel-head">
+          <div>
+            <span class="eyebrow">搜歌学习</span>
+            <h3>输入歌名，获取完整歌词</h3>
+          </div>
+        </div>
+        <div class="sync-body">
+          <div class="search-fields">
+            <input id="songSearchInput" placeholder="歌名，例如：夜に駆ける">
+            <input id="songSearchArtist" placeholder="歌手（可选）">
+          </div>
+          <button class="primary-btn" id="searchSong">搜索并解析</button>
+          <p class="sync-status" id="songSearchStatus">搜索后会自动获取歌词、拆单词、匹配语法。</p>
+          <div class="song-search-results" id="songSearchResults"></div>
+        </div>
+      </article>
+
       <div class="sync-grid">
         <article class="panel sync-panel">
           <div class="panel-head">

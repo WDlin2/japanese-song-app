@@ -421,6 +421,19 @@ const GRAMMAR_POINTS = [
       { ja: "今、音楽を聴いている。", romaji: "Ima, ongaku o kiite iru.", zh: "我正在听音乐。" },
       { ja: "ドアが開いている。", romaji: "Doa ga aite iru.", zh: "门开着。" }
     ]
+  },
+  {
+    id: "tai",
+    pattern: "〜たい",
+    title: "想做…",
+    level: "N5",
+    song: "歌词常见",
+    songId: "lemon",
+    explain: "动词ます形去掉ます，再接 たい，表示“我想做…”。",
+    examples: [
+      { ja: "日本食を食べたいです。", romaji: "Nihonshoku o tabetai desu.", zh: "我想吃日本料理。" },
+      { ja: "もう一度会いたい。", romaji: "Mou ichido aitai.", zh: "还想再见一次。" }
+    ]
   }
 ];
 
@@ -637,6 +650,7 @@ let lyricIndex = 0;
 let deferredInstallPrompt = null;
 let lastSyncedTracks = [];
 let editingCustomId = null;
+let lastSearchResults = [];
 
 function $(selector) {
   return document.querySelector(selector);
@@ -661,6 +675,7 @@ function loadState() {
         completedDays: {},
         knownWords: [],
         customSongs: [],
+        wordCache: {},
         kanaStats: { correct: 0, streak: 0, best: 0 },
         currentView: "songs"
       }, JSON.parse(raw));
@@ -675,6 +690,7 @@ function loadState() {
     completedDays: {},
     knownWords: [],
     customSongs: [],
+    wordCache: {},
     kanaStats: { correct: 0, streak: 0, best: 0 },
     currentView: "songs"
   };
@@ -1143,7 +1159,7 @@ async function syncPlaylist() {
     return;
   }
   status.textContent = "正在同步歌单，请稍候…";
-  const target = `https://music.163.com/api/v6/playlist/detail?id=${id}`;
+  const target = `https://music.163.com/api/v6/playlist/detail?id=${id}&n=1000`;
   const userProxy = $("#proxyInput").value.trim();
   const proxies = userProxy ? [userProxy] : NETEASE_PROXY_FALLBACKS;
   let data = null;
@@ -1243,39 +1259,14 @@ async function fetchLyricsForTrack(index) {
   }
   status.textContent = `正在获取 ${track.title} 的歌词…`;
   const target = `https://music.163.com/api/song/lyric?id=${track.id}&lv=-1&kv=-1&tv=-1`;
-  const userProxy = $("#proxyInput").value.trim();
-  const proxies = userProxy ? [userProxy] : NETEASE_PROXY_FALLBACKS;
-  let data = null;
-  for (const proxy of proxies) {
-    try {
-      const response = await fetch(proxy + encodeURIComponent(target));
-      const text = await response.text();
-      const parsed = JSON.parse(text);
-      if (proxy.includes("allorigins.win/get")) {
-        data = JSON.parse(parsed.contents || "{}");
-      } else {
-        data = parsed;
-      }
-    } catch (error) {
-      continue;
-    }
-    if (data && data.lrc && data.lrc.lyric) break;
-  }
-  if (!data || !data.lrc || !data.lrc.lyric) {
+  const data = await fetchJsonViaProxies(target);
+  const parsedLines = parseLyricResponse(data);
+  if (!parsedLines.length) {
     status.textContent = "歌词获取失败，请手动粘贴歌词。";
     return;
   }
-  const metadataPattern = /(作词|作曲|编曲|制作人|演唱|混音|母带|录音|监制|吉他|贝斯|鼓|键盘|弦乐|翻译|OP|SP|配唱|人声|和声)/;
-  const lines = data.lrc.lyric
-    .split("\n")
-    .map(line => line.replace(/\[\d{2}:\d{2}(?:\.\d+)?\]/g, "").trim())
-    .filter(line => line && !metadataPattern.test(line))
-    .slice(0, 24)
-    .map(ja => ({ ja, romaji: "", zh: "", words: [] }));
-  if (!lines.length) {
-    status.textContent = "这首歌没有可用歌词。";
-    return;
-  }
+  const enriched = await enrichLyricLines(parsedLines);
+  const lines = enriched.lines;
   const existing = state.customSongs.find(song => song.neteaseId === String(track.id) || (song.title === track.title && song.artist === track.artist));
   const songData = {
     id: existing ? existing.id : `custom-${Date.now()}`,
@@ -1287,9 +1278,9 @@ async function fetchLyricsForTrack(index) {
     romaji: "",
     zh: "",
     lines,
-    vocab: [],
-    grammar: "歌词已自动获取，翻译、单词和语法可以到导入页补充。",
-    grammarPointIds: [],
+    vocab: enriched.vocab,
+    grammar: "已自动匹配歌词中出现的语法点。",
+    grammarPointIds: enriched.grammarPointIds,
     quizLine: null,
     options: [],
     answer: null,
@@ -1363,6 +1354,241 @@ function importLyricsFromForm() {
   renderSongs();
   switchView("songs");
   toast("歌词已保存，开始学习吧");
+}
+
+async function fetchJsonViaProxies(target) {
+  const userProxy = $("#proxyInput").value.trim();
+  const proxies = userProxy ? [userProxy] : NETEASE_PROXY_FALLBACKS;
+  for (const proxy of proxies) {
+    try {
+      const response = await fetch(proxy + encodeURIComponent(target));
+      const text = await response.text();
+      const parsed = JSON.parse(text);
+      if (proxy.includes("allorigins.win/get")) {
+        return JSON.parse(parsed.contents || "{}");
+      }
+      return parsed;
+    } catch (error) {
+      continue;
+    }
+  }
+  return null;
+}
+
+function parseLrcToEntries(lrcText) {
+  const metadataPattern = /(作词|作曲|编曲|制作人|演唱|混音|母带|录音|监制|吉他|贝斯|鼓|键盘|弦乐|翻译|OP|SP|配唱|人声|和声)/;
+  return String(lrcText || "").split("\n").map(line => {
+    const match = line.match(/\[(\d{2}):(\d{2})(?:\.(\d+))?\](.*)/);
+    if (!match) return null;
+    const text = (match[4] || "").trim();
+    if (!text || metadataPattern.test(text)) return null;
+    const time = Number(match[1]) * 60 + Number(match[2]) + Number((match[3] || "0").padEnd(3, "0")) / 1000;
+    return { time, text };
+  }).filter(Boolean);
+}
+
+function parseLyricResponse(data) {
+  const original = parseLrcToEntries(data && data.lrc && data.lrc.lyric);
+  const translated = parseLrcToEntries(data && data.tlyric && data.tlyric.lyric);
+  const translationMap = new Map(translated.map(item => [Math.round(item.time * 10), item.text]));
+  return original.map(item => ({
+    ja: item.text,
+    romaji: "",
+    zh: translationMap.get(Math.round(item.time * 10)) || "",
+    words: []
+  }));
+}
+
+function tokenizeJapanese(text) {
+  const cleaned = String(text || "").replace(/[「」『』（）()・、。，．！？!?…\s]/g, " ").trim();
+  if (window.Intl && window.Intl.Segmenter) {
+    const segmenter = new Intl.Segmenter("ja", { granularity: "word" });
+    return Array.from(segmenter.segment(cleaned))
+      .map(item => item.segment.trim())
+      .filter(token => /[\u3040-\u30ff\u3400-\u9fff]/.test(token));
+  }
+  return cleaned.match(/[\u3040-\u30ff]+|[\u3400-\u9fff]+/g) || [];
+}
+
+function lookupLocalWord(token) {
+  const local = WORDS.find(word => word.ja === token || word.kana === token);
+  if (local) {
+    return { ja: token, kana: local.kana || "", zh: local.zh };
+  }
+  if (state.wordCache[token]) {
+    return { ja: token, kana: state.wordCache[token].kana || "", zh: state.wordCache[token].zh || "" };
+  }
+  return null;
+}
+
+async function lookupJishoWord(token) {
+  try {
+    const response = await fetch(`https://jisho.org/api/v1/search/words?keyword=${encodeURIComponent(token)}`);
+    if (!response.ok) return null;
+    const data = await response.json();
+    const first = data && data.data && data.data[0];
+    if (!first) return null;
+    return {
+      ja: token,
+      kana: (first.japanese && first.japanese[0] && first.japanese[0].reading) || "",
+      zh: (first.senses && first.senses[0] && first.senses[0].english_definitions || []).slice(0, 2).join(" / ")
+    };
+  } catch (error) {
+    return null;
+  }
+}
+
+function detectGrammarIds(text) {
+  const detectors = [
+    ["naraba", /ならば/],
+    ["yokatta", /よかった/],
+    ["youni", /ように/],
+    ["teyuku", /て(い|ゆ)く/],
+    ["nda", /んだ/],
+    ["hazu", /はず/],
+    ["noni", /のに/],
+    ["iru-continuation", /ている/],
+    ["tai", /たい/]
+  ];
+  return detectors.filter(([, pattern]) => pattern.test(text || "")).map(([id]) => id);
+}
+
+async function enrichLyricLines(lines) {
+  const uniqueTokens = [];
+  const tokenSet = new Set();
+  lines.forEach(line => {
+    line.words = tokenizeJapanese(line.ja).map(surface => ({ surface, kana: "", zh: "" }));
+    line.words.forEach(word => {
+      if (!tokenSet.has(word.surface)) {
+        tokenSet.add(word.surface);
+        uniqueTokens.push(word.surface);
+      }
+    });
+  });
+
+  const limit = 60;
+  const lookups = uniqueTokens.slice(0, limit);
+  const results = new Array(lookups.length);
+  let cursor = 0;
+  async function worker() {
+    while (cursor < lookups.length) {
+      const index = cursor++;
+      const token = lookups[index];
+      results[index] = lookupLocalWord(token) || await lookupJishoWord(token) || { ja: token, kana: "", zh: "未收录" };
+      if (results[index].zh && results[index].zh !== "未收录") {
+        state.wordCache[token] = results[index];
+      }
+    }
+  }
+  await Promise.all(Array.from({ length: 4 }, worker));
+  uniqueTokens.slice(limit).forEach(token => results.push({ ja: token, kana: "", zh: "未收录" }));
+
+  const wordMap = new Map(uniqueTokens.map((token, index) => [token, results[index]]));
+  const vocabMap = new Map();
+  const grammarSet = new Set();
+  lines.forEach(line => {
+    line.words.forEach(word => {
+      const info = wordMap.get(word.surface) || { ja: word.surface, kana: "", zh: "" };
+      word.kana = info.kana || "";
+      word.zh = info.zh || "";
+      if (info.zh && info.zh !== "未收录" && !vocabMap.has(word.surface)) {
+        vocabMap.set(word.surface, { ja: word.surface, kana: info.kana || "", zh: info.zh });
+      }
+    });
+    detectGrammarIds(line.ja).forEach(id => grammarSet.add(id));
+  });
+  return {
+    lines,
+    vocab: Array.from(vocabMap.values()).slice(0, 40),
+    grammarPointIds: Array.from(grammarSet)
+  };
+}
+
+async function fetchAndParseSongLyrics(song) {
+  const target = `https://music.163.com/api/song/lyric?id=${song.id}&lv=-1&kv=-1&tv=-1`;
+  const data = await fetchJsonViaProxies(target);
+  const lines = parseLyricResponse(data);
+  if (!lines.length) return null;
+  return enrichLyricLines(lines);
+}
+
+async function searchSongs() {
+  const query = $("#songSearchInput").value.trim();
+  const artist = $("#songSearchArtist").value.trim();
+  const status = $("#songSearchStatus");
+  if (!query) {
+    status.textContent = "请先输入歌名。";
+    return;
+  }
+  status.textContent = "正在搜索网易云歌曲…";
+  const searchQuery = artist ? `${query} ${artist}` : query;
+  const target = `https://music.163.com/api/search/get/web?s=${encodeURIComponent(searchQuery)}&type=1&limit=10`;
+  const data = await fetchJsonViaProxies(target);
+  const songs = data && data.result && data.result.songs ? data.result.songs : [];
+  lastSearchResults = songs.map(song => ({
+    id: song.id,
+    title: song.name,
+    artist: (song.artists || []).map(item => item.name).join(" / "),
+    album: (song.album && song.album.name) || ""
+  }));
+  renderSongSearchResults();
+  status.textContent = lastSearchResults.length ? `找到 ${lastSearchResults.length} 首，选择一首获取完整歌词。` : "没有搜到结果，请换一个歌名。";
+}
+
+function renderSongSearchResults() {
+  $("#songSearchResults").innerHTML = lastSearchResults.map((song, index) => `
+    <div class="search-result">
+      <div>
+        <h4>${song.title}</h4>
+        <p>${song.artist}${song.album ? ` · ${song.album}` : ""}</p>
+      </div>
+      <button class="secondary-btn" data-search-song="${index}">获取歌词并解析</button>
+    </div>
+  `).join("");
+}
+
+async function handleSearchSong(index) {
+  const song = lastSearchResults[index];
+  const status = $("#songSearchStatus");
+  if (!song) return;
+  status.textContent = `正在获取《${song.title}》的完整歌词并解析…`;
+  const parsed = await fetchAndParseSongLyrics(song);
+  if (!parsed) {
+    status.textContent = "获取失败，网易云接口或代理不可用。";
+    return;
+  }
+  const existing = state.customSongs.find(item => item.neteaseId === String(song.id) || (item.title === song.title && item.artist === song.artist));
+  const songData = {
+    id: existing ? existing.id : `custom-${Date.now()}`,
+    title: song.title,
+    artist: song.artist || "未知歌手",
+    search: `${song.title} ${song.artist}`,
+    neteaseId: song.id,
+    lyric: parsed.lines[0].ja,
+    romaji: parsed.lines[0].romaji || "",
+    zh: parsed.lines[0].zh || "",
+    lines: parsed.lines,
+    vocab: parsed.vocab,
+    grammar: "已自动匹配歌词中出现的语法点。",
+    grammarPointIds: parsed.grammarPointIds,
+    quizLine: null,
+    options: [],
+    answer: null,
+    isCustom: true
+  };
+  if (existing) {
+    Object.assign(existing, songData);
+    activeSong = existing;
+  } else {
+    state.customSongs.push(songData);
+    activeSong = songData;
+  }
+  lyricIndex = 0;
+  saveState();
+  renderSync();
+  renderSongs();
+  switchView("songs");
+  toast(`已解析《${song.title}》，共 ${parsed.lines.length} 句歌词`);
 }
 
 function renderAnimeLesson() {
@@ -1658,6 +1884,12 @@ document.addEventListener("click", event => {
     return;
   }
 
+  const searchSongButton = event.target.closest("[data-search-song]");
+  if (searchSongButton) {
+    handleSearchSong(Number(searchSongButton.dataset.searchSong));
+    return;
+  }
+
   const neteaseOpenButton = event.target.closest("[data-netease-open]");
   if (neteaseOpenButton) {
     const id = neteaseOpenButton.dataset.neteaseOpen;
@@ -1845,6 +2077,10 @@ $("#newSongTitle").addEventListener("input", () => {
 $("#syncPlaylist").addEventListener("click", syncPlaylist);
 $("#importSongList").addEventListener("click", importSongListText);
 $("#importLyrics").addEventListener("click", importLyricsFromForm);
+$("#searchSong").addEventListener("click", searchSongs);
+$("#songSearchInput").addEventListener("keydown", event => {
+  if (event.key === "Enter") searchSongs();
+});
 $("#clearSync").addEventListener("click", () => {
   lastSyncedTracks = [];
   renderSyncTracks();
