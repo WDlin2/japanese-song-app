@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f6f3ed">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="歌学日语">
+  <title>歌学日语 · 用日语歌学单词和语法</title>
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="assets/icon-192.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand">
+      <span class="brand-mark">旅</span>
+      <div>
+        <h1>歌学日语</h1>
+        <p>用日语歌学会歌词里的单词和语法</p>
+      </div>
+    </div>
+    <div class="header-controls">
+      <button class="install-btn hidden" id="installApp">安装 App</button>
+      <label class="date-field">
+        <span>出发日期</span>
+        <input id="tripDate" type="date" aria-label="选择出发日期">
+      </label>
+      <div class="countdown">
+        <strong id="countdownDays">--</strong>
+        <span>天后出发</span>
+      </div>
+    </div>
+  </header>
+
+  <nav class="tabbar" aria-label="主要功能">
+    <button class="tab-btn active" data-view="dashboard">首页</button>
+    <button class="tab-btn" data-view="songs">歌词</button>
+    <button class="tab-btn" data-view="grammar">语法</button>
+    <button class="tab-btn" data-view="sync">导入</button>
+    <button class="tab-btn" data-view="words">单词</button>
+    <button class="tab-btn" data-view="kana">假名</button>
+    <button class="tab-btn" data-view="plan">计划</button>
+    <button class="tab-btn" data-view="anime">动漫</button>
+    <button class="tab-btn" data-view="phrases">短语</button>
+  </nav>
+
+  <main id="app">
+    <section id="view-dashboard" class="view active">
+      <div class="scene-banner">
+        <div class="scene-content">
+          <span class="eyebrow">今日推荐</span>
+          <h2 id="todayTitle">先掌握“听得到”的日语</h2>
+          <p id="todaySummary">用一首歌或一个动漫片段，打开你的耳朵。</p>
+          <button class="primary-btn" id="todayCta">开始今天的学习</button>
+        </div>
+      </div>
+
+      <div class="stats-grid" id="statsGrid">
+        <div class="stat-card"><span class="stat-label">今日任务</span><strong id="statToday">--</strong><small id="statTodaySub">等待开始</small></div>
+        <div class="stat-card"><span class="stat-label">计划完成</span><strong id="statPlan">--</strong><small id="statPlanSub">共 30 天</small></div>
+        <div class="stat-card"><span class="stat-label">已掌握词</span><strong id="statWords">--</strong><small id="statWordsSub">单词卡</small></div>
+        <div class="stat-card"><span class="stat-label">假名连胜</span><strong id="statKana">--</strong><small id="statKanaSub">刷新纪录</small></div>
+      </div>
+
+      <div class="dashboard-grid">
+        <article class="panel media-panel">
+          <div class="panel-head">
+            <div>
+              <span class="eyebrow">歌曲 / 动漫</span>
+              <h3>今天听什么</h3>
+            </div>
+            <button class="ghost-btn" data-jump="songs">换一首</button>
+          </div>
+          <div id="todayMedia"></div>
+        </article>
+
+        <article class="panel focus-panel">
+          <div class="panel-head">
+            <div>
+              <span class="eyebrow">今日句型</span>
+              <h3>旅行马上能用</h3>
+            </div>
+            <button class="ghost-btn" data-jump="phrases">更多短语</button>
+          </div>
+          <div id="dailyPhrase"></div>
+        </article>
+      </div>
+
+      <div class="quick-strip">
+        <button class="quick-btn" data-jump="plan"><span>01</span>查看 30 天计划</button>
+        <button class="quick-btn" data-jump="words"><span>02</span>复习 10 个词</button>
+        <button class="quick-btn" data-jump="kana"><span>03</span>假名闪电战</button>
+        <button class="quick-btn" data-jump="anime"><span>04</span>动漫开口练习</button>
+      </div>
+    </section>
+
+    <section id="view-plan" class="view">
+      <div class="view-head">
+        <div>
+          <span class="eyebrow">30 天计划</span>
+          <h2>按“到达那天就能用”的顺序学</h2>
+          <p>先假名，再核心句型，最后用歌曲和动漫磨耳朵。勾选已完成任务，进度会自动保存。</p>
+        </div>
+        <div class="progress-block">
+          <strong id="planPercent">0%</strong>
+          <div class="progress-bar"><span id="planBar"></span></div>
+          <small id="planProgressText">0 / 30 天完成</small>
+        </div>
+      </div>
+      <div class="plan-list" id="planList"></div>
+    </section>
+
+    <section id="view-songs" class="view">
+      <div class="view-head">
+        <div>
+          <span class="eyebrow">歌词学习</span>
+          <h2>从一句歌词开始，学会一个语法</h2>
+          <p>逐句看歌词、拆单词、讲语法、给例句，再配合网易云听原曲。</p>
+        </div>
+        <button class="primary-btn" id="playSongAudio">播放当前歌词</button>
+      </div>
+      <div class="song-grid" id="songGrid"></div>
+      <article class="panel lesson-panel" id="songLesson">
+        <div class="panel-head">
+          <div>
+            <span class="eyebrow">今日歌词拆解</span>
+            <h3 id="songLessonTitle"></h3>
+          </div>
+          <div class="panel-actions">
+            <button class="ghost-btn" id="openNeteaseApp">网易云 App</button>
+            <button class="ghost-btn" id="openNeteaseWeb">网易云网页</button>
+            <button class="ghost-btn" id="openYoutube">YouTube</button>
+          </div>
+        </div>
+        <div class="lesson-body" id="songLessonBody"></div>
+      </article>
+    </section>
+
+    <section id="view-grammar" class="view">
+      <div class="view-head">
+        <div>
+          <span class="eyebrow">语法速查</span>
+          <h2>歌词里最常出现的 10 个基础语法</h2>
+          <p>每个语法都从具体歌词出发，先看懂例句，再试着替换成自己的句子。</p>
+        </div>
+        <div class="toolbar compact-toolbar">
+          <select id="grammarFilter" aria-label="按难度筛选">
+            <option value="all">全部难度</option>
+            <option value="N5">N5</option>
+            <option value="N4">N4</option>
+          </select>
+        </div>
+      </div>
+      <div class="grammar-grid" id="grammarList"></div>
+    </section>
+
+    <section id="view-sync" class="view">
+      <div class="view-head">
+        <div>
+          <span class="eyebrow">歌单与新歌</span>
+          <h2>把网易云歌单变成你的日语课</h2>
+          <p>粘贴歌单链接自动识别日语歌；没有曲库的歌，可以自己导入歌词后开始学习。</p>
+        </div>
+      </div>
+
+      <div class="sync-grid">
+        <article class="panel sync-panel">
+          <div class="panel-head">
+            <div>
+              <span class="eyebrow">网易云同步</span>
+              <h3>粘贴歌单链接或 ID</h3>
+            </div>
+            <button class="ghost-btn" id="clearSync">清空结果</button>
+          </div>
+          <div class="sync-body">
+            <input id="playlistInput" placeholder="例如：https://music.163.com/#/playlist?id=3778678 或 3778678">
+            <button class="primary-btn" id="syncPlaylist">同步并识别日语歌</button>
+            <input id="proxyInput" placeholder="代理地址（默认 allorigins，留空即可）">
+            <p class="sync-status" id="playlistStatus">需要联网。网易云公开接口不稳定时，可以换成自己的代理地址。</p>
+          </div>
+        </article>
+
+        <article class="panel sync-panel">
+          <div class="panel-head">
+            <div>
+              <span class="eyebrow">快速导入</span>
+              <h3>粘贴歌单文本</h3>
+            </div>
+          </div>
+          <div class="sync-body">
+            <textarea id="songListInput" rows="5" placeholder="每行一首：歌名 - 歌手"></textarea>
+            <button class="secondary-btn" id="importSongList">识别文本里的日语歌</button>
+          </div>
+        </article>
+      </div>
+
+      <div class="sync-results hidden" id="syncResults"></div>
+
+      <article class="panel sync-panel import-panel">
+        <div class="panel-head">
+          <div>
+            <span class="eyebrow">导入新歌</span>
+            <h3>添加歌词，建立自己的学习课</h3>
+          </div>
+        </div>
+        <div class="sync-body">
+          <div class="import-fields">
+            <input id="newSongTitle" placeholder="歌名（日文）">
+            <input id="newSongArtist" placeholder="歌手">
+            <input id="newSongNeteaseId" placeholder="网易云歌曲 ID（可选）">
+          </div>
+          <textarea id="lyricImportInput" rows="7" placeholder="格式：日文 | 罗马音 | 中文&#10;例如：夢ならばどれほどよかったでしょう。 | Yume naraba dorehodo yokatta deshou. | 如果这是一场梦该多好&#10;也可以每行只写日文歌词"></textarea>
+          <textarea id="grammarNote" rows="2" placeholder="学习重点 / 语法笔记（可选）"></textarea>
+          <button class="primary-btn" id="importLyrics">保存并开始学习</button>
+        </div>
+      </article>
+
+      <div class="custom-list" id="customSongList"></div>
+    </section>
+
+    <section id="view-anime" class="view">
+      <div class="view-head">
+        <div>
+          <span class="eyebrow">动漫开口</span>
+          <h2>像角色一样自然说出来</h2>
+          <p>场景短句配上语气提示，先跟读，再在出行时换成真实台词。</p>
+        </div>
+        <button class="primary-btn" id="startAnimeQuiz">场景小测</button>
+      </div>
+      <div class="anime-grid" id="animeGrid"></div>
+      <article class="panel lesson-panel" id="animeLesson">
+        <div class="panel-head">
+          <div>
+            <span class="eyebrow">场景拆解</span>
+            <h3 id="animeLessonTitle"></h3>
+          </div>
+          <button class="ghost-btn" data-jump="phrases">旅行替换</button>
+        </div>
+        <div class="lesson-body" id="animeLessonBody"></div>
+      </article>
+    </section>
+
+    <section id="view-words" class="view">
+      <div class="view-head">
+        <div>
+          <span class="eyebrow">单词卡</span>
+          <h2>先掌握高频旅行词</h2>
+          <p>把“要用的词”排在最前。认识就标记掌握，系统会把没记住的优先放进下一轮。</p>
+        </div>
+        <button class="primary-btn" id="startReview">开始复习</button>
+      </div>
+      <div class="toolbar">
+        <input id="wordSearch" type="search" placeholder="搜索单词、假名或中文">
+        <select id="wordFilter" aria-label="按分类筛选">
+          <option value="all">全部分类</option>
+        </select>
+        <button class="ghost-btn" id="resetWords">重置进度</button>
+      </div>
+      <div class="word-grid" id="wordGrid"></div>
+      <div class="review-panel hidden" id="reviewPanel">
+        <div class="review-top">
+          <span id="reviewProgress">1 / 10</span>
+          <button class="ghost-btn" id="closeReview">退出复习</button>
+        </div>
+        <div class="flashcard" id="flashcard">
+          <div class="flashcard-front">
+            <span id="cardCategory">旅行</span>
+            <h3 id="cardJa">--</h3>
+            <p id="cardKana">--</p>
+          </div>
+          <div class="flashcard-back hidden">
+            <p id="cardRomaji">--</p>
+            <h4 id="cardZh">--</h4>
+            <p id="cardExample">--</p>
+          </div>
+        </div>
+        <div class="review-actions">
+          <button class="secondary-btn" id="flipCard">看答案</button>
+          <button class="danger-btn hidden" id="againCard">再练一次</button>
+          <button class="primary-btn hidden" id="knowCard">我记住了</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="view-kana" class="view">
+      <div class="view-head">
+        <div>
+          <span class="eyebrow">五十音</span>
+          <h2>用 3 分钟把假名变熟</h2>
+          <p>先看表，再做闪电测验。每个读音都可以点出来跟读。</p>
+        </div>
+        <div class="segmented" id="kanaMode">
+          <button class="seg-btn active" data-mode="hira">平假名</button>
+          <button class="seg-btn" data-mode="kata">片假名</button>
+          <button class="seg-btn" data-mode="mix">混合</button>
+        </div>
+      </div>
+      <div class="kana-layout">
+        <article class="panel kana-quiz">
+          <div class="panel-head">
+            <div>
+              <span class="eyebrow">闪电测验</span>
+              <h3 id="quizScore">答对 0 题</h3>
+            </div>
+            <button class="ghost-btn" id="nextKana">换一题</button>
+          </div>
+          <div class="kana-quiz-body">
+            <button class="kana-char" id="kanaChar">あ</button>
+            <div class="kana-options" id="kanaOptions"></div>
+            <p class="quiz-feedback" id="kanaFeedback">点击读音选项开始</p>
+          </div>
+        </article>
+        <article class="panel kana-chart-panel">
+          <div class="panel-head">
+            <div>
+              <span class="eyebrow">参考表</span>
+              <h3>五十音图</h3>
+            </div>
+            <button class="ghost-btn" id="playAllKana">朗读</button>
+          </div>
+          <div class="kana-chart" id="kanaChart"></div>
+        </article>
+      </div>
+    </section>
+
+    <section id="view-phrases" class="view">
+      <div class="view-head">
+        <div>
+          <span class="eyebrow">旅行短语手册</span>
+          <h2>到了日本直接开口</h2>
+          <p>按场景快速查找，点播放按钮听发音，也可以长按熟悉句子结构。</p>
+        </div>
+        <div class="toolbar compact-toolbar">
+          <input id="phraseSearch" type="search" placeholder="搜索短语">
+          <select id="phraseFilter" aria-label="按场景筛选">
+            <option value="all">全部场景</option>
+          </select>
+        </div>
+      </div>
+      <div class="phrase-list" id="phraseList"></div>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <p>歌词片段仅用于语言学习 · 发音使用浏览器语音合成 · 网易云跳转依赖本机已安装 App</p>
+  </footer>
+
+  <div class="toast hidden" id="toast"></div>
+  <script src="app.js"></script>
+</body>
+</html>
