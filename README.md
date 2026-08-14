@@ -2,6 +2,8 @@
 
 一个可以安装到手机或桌面的日语学习 PWA，核心是用日语歌学会歌词里的单词和语法。
 
+线上地址：<https://wdlin2.github.io/japanese-song-app/>
+
 ## 使用方式
 
 直接打开 `index.html`，或在项目目录运行：
