@@ -1328,6 +1328,29 @@ let deferredInstallPrompt = null;
 let lastSyncedTracks = [];
 let editingCustomId = null;
 let lastSearchResults = [];
+let utatenFetching = false;
+
+function setBusy(active) {
+  const bar = document.getElementById("busyBar");
+  if (bar) bar.classList.toggle("active", Boolean(active));
+}
+
+function escapeHtml(text) {
+  return String(text == null ? "" : text)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function cacheWord(token, info) {
+  state.wordCache[token] = info;
+  const keys = Object.keys(state.wordCache);
+  if (keys.length > 1500) {
+    keys.slice(0, keys.length - 1500).forEach(key => delete state.wordCache[key]);
+  }
+}
 
 function $(selector) {
   return document.querySelector(selector);
@@ -1624,13 +1647,13 @@ function renderSongLesson() {
     </div>
     <div class="lesson-grid">
       <div class="lesson-box">
-        <h5>单词${activeSong.vocab && activeSong.vocab.length ? `（${activeSong.vocab.filter(v => v.verified).length}/${activeSong.vocab.length} 已确认读音）` : ""}</h5>
+        <h5>单词${activeSong.vocab && activeSong.vocab.length ? `（${activeSong.vocab.filter(v => v.verified !== false).length}/${activeSong.vocab.length} 已确认读音）` : ""}</h5>
         ${activeSong.vocab && activeSong.vocab.length ? activeSong.vocab.map(v => `
           <div class="vocab-row">
-            <strong>${v.ja}</strong>
-            <span>${v.kana || "…"}${v.verified ? "" : " ?"}</span>
-            <span>${v.zh}</span>
-            <button class="kana-edit-btn" data-edit-kana="${v.ja}" title="手动修正假名">✎</button>
+            <strong>${escapeHtml(v.ja)}</strong>
+            <span>${escapeHtml(v.kana || "…")}${v.verified === false ? " ?" : ""}</span>
+            <span>${escapeHtml(v.zh)}</span>
+            <button class="kana-edit-btn" data-edit-kana="${escapeHtml(v.ja)}" title="手动修正假名">✎</button>
           </div>
         `).join("") : `<p>暂无自动词卡，歌词里的重点词会在你补充学习笔记后逐步积累。</p>`}
       </div>
@@ -1681,20 +1704,26 @@ function renderActiveLyricLine() {
   if (lyricIndex < 0) lyricIndex = 0;
   if (lyricIndex >= lines.length) lyricIndex = lines.length - 1;
   const line = lines[lyricIndex];
+  const isCustom = Boolean(activeSong && activeSong.isCustom);
   $("#activeLineJa").textContent = line.ja;
   $("#activeLineRomaji").textContent = line.romaji || "";
   $("#activeLineZh").textContent = line.zh || "（暂无中文翻译，可在导入页补全）";
   $("#lineCounter").textContent = `${lyricIndex + 1} / ${lines.length}`;
+  const hasUnverified = (line.words || []).some(word => word.surface && !FUNCTION_WORDS.has(word.surface) && word.verified === false);
   const badge = line.proofread
     ? `<span class="verify-badge ok">✔ 已校对</span>`
-    : (line.romajiFrom === "klyric"
-      ? `<span class="verify-badge">原曲罗马音</span>`
-      : `<span class="verify-badge warn">读音未校对</span>`);
+    : (line.romajiFrom === "utaten"
+      ? `<span class="verify-badge ok">✔ utaten 注音</span>`
+      : (line.romajiFrom === "klyric"
+        ? `<span class="verify-badge">原曲罗马音</span>`
+        : (isCustom && hasUnverified
+          ? `<span class="verify-badge warn">读音未校对</span>`
+          : "")));
   $("#lineBadge").innerHTML = badge;
   const chips = (line.words || []).filter(word => !FUNCTION_WORDS.has(word.surface)).map(word => `
-    <button class="word-chip ${word.verified ? "" : "uncertain"}" data-speak="${(word.kana || word.surface).replace(/"/g, "")}" title="${word.verified ? "" : "读音未经确认：可点单词卡上的 ✎ 手动修正，或用下方校对面板粘贴带注音的歌词"}">
-      <strong>${word.surface}</strong>
-      <small>${word.kana || "…"}${word.verified ? "" : " ?"} · ${(word.zh && word.zh !== "未收录") ? word.zh : "…"}</small>
+    <button class="word-chip ${word.verified === false ? "uncertain" : ""}" data-speak="${(word.kana || word.surface).replace(/"/g, "")}" title="${word.verified === false ? "读音未经确认：可点单词卡上的 ✎ 手动修正，或用下方校对面板粘贴带注音的歌词" : ""}">
+      <strong>${escapeHtml(word.surface)}</strong>
+      <small>${word.kana || "…"}${word.verified === false ? " ?" : ""} · ${(word.zh && word.zh !== "未收录") ? escapeHtml(word.zh) : "…"}</small>
     </button>
   `).join("");
   $("#activeLineWords").innerHTML = chips || `<span class="word-chip"><strong>${line.ja}</strong><small>点右上角播放听原句</small></span>`;
@@ -1720,9 +1749,9 @@ function renderSongs() {
         <span class="card-type">${song.isCustom ? "我的导入" : "J-POP"}</span>
         <span class="card-icon">♪</span>
       </div>
-      <h3>${song.title}</h3>
-      <p class="artist">${song.artist}</p>
-      <blockquote>${song.lyric || (song.lines && song.lines[0] ? song.lines[0].ja : "等待导入歌词")}</blockquote>
+      <h3>${escapeHtml(song.title)}</h3>
+      <p class="artist">${escapeHtml(song.artist)}</p>
+      <blockquote>${escapeHtml(song.lyric || (song.lines && song.lines[0] ? song.lines[0].ja : "等待导入歌词"))}</blockquote>
     </button>
   `).join("");
   renderSongLesson();
@@ -1805,8 +1834,8 @@ function renderSyncTracks() {
       return `
         <div class="sync-track">
           <div>
-            <h4>${track.title}</h4>
-            <p>${track.artist || "未知歌手"}</p>
+            <h4>${escapeHtml(track.title)}</h4>
+            <p>${escapeHtml(track.artist || "未知歌手")}</p>
             <div class="track-tags">
               ${japanese ? `<span class="track-tag">日语歌</span>` : ""}
               ${builtIn ? `<span class="track-tag match">曲库已有</span>` : `<span class="track-tag">需要导入</span>`}
@@ -1834,8 +1863,8 @@ function renderCustomSongs() {
     ${state.customSongs.map(song => `
       <div class="custom-song">
         <div>
-          <h4>${song.title}</h4>
-          <p>${song.artist} · ${song.lines && song.lines.length ? `${song.lines.length} 句歌词` : "还没有歌词"}${song.proofread ? `<span class="track-tag match">已校对</span>` : ""}</p>
+          <h4>${escapeHtml(song.title)}</h4>
+          <p>${escapeHtml(song.artist)} · ${song.lines && song.lines.length ? `${song.lines.length} 句歌词` : "还没有歌词"}${song.proofread ? `<span class="track-tag match">已校对</span>` : ""}</p>
         </div>
         <div class="custom-actions">
           <button class="primary-btn" data-custom-open="${song.id}">开始学习</button>
@@ -1951,8 +1980,6 @@ async function fetchLyricsForTrack(index) {
     status.textContent = "歌词获取失败，请手动粘贴歌词。";
     return;
   }
-  const enriched = await enrichLyricLines(parsedLines);
-  const lines = enriched.lines;
   const existing = state.customSongs.find(song => song.neteaseId === String(track.id) || (song.title === track.title && song.artist === track.artist));
   const songData = {
     id: existing ? existing.id : `custom-${Date.now()}`,
@@ -1960,17 +1987,17 @@ async function fetchLyricsForTrack(index) {
     artist: track.artist || "未知歌手",
     search: `${track.title} ${track.artist}`,
     neteaseId: track.id || null,
-    lyric: lines[0].ja,
-    romaji: lines[0].romaji || "",
-    zh: lines[0].zh || "",
-    lines,
-    vocab: enriched.vocab,
+    lyric: parsedLines[0].ja,
+    romaji: parsedLines[0].romaji || "",
+    zh: parsedLines[0].zh || "",
+    lines: parsedLines,
+    vocab: [],
     grammar: "已自动匹配歌词中出现的语法点。",
-    grammarPointIds: enriched.grammarPointIds,
-    quizLine: (enriched.quiz && enriched.quiz.quizLine) || null,
-    options: (enriched.quiz && enriched.quiz.options) || [],
-    answer: (enriched.quiz && enriched.quiz.answer) || null,
-    enriched: true,
+    grammarPointIds: [],
+    quizLine: null,
+    options: [],
+    answer: null,
+    enriched: false,
     isCustom: true
   };
   if (existing) {
@@ -1981,8 +2008,58 @@ async function fetchLyricsForTrack(index) {
   saveState();
   renderSync();
   renderSongs();
-  status.textContent = `已获取 ${track.title} 的 ${lines.length} 句歌词，可以开始学习了。`;
-  autoVerifyReadings(existing || songData);
+  status.textContent = `已获取 ${track.title} 的 ${parsedLines.length} 句歌词，正在解析…`;
+  finishEnrichInBackground(existing || songData, {
+    onDone: enriched => {
+      status.textContent = `已获取 ${track.title} 的 ${parsedLines.length} 句歌词：${enriched.vocab.length} 个生词 · ${enriched.grammarPointIds.length} 个语法点`;
+      autoVerifyReadings(existing || songData);
+    }
+  });
+}
+
+async function finishEnrichInBackground(song, options = {}) {
+  if (!song || !song.lines || !song.lines.length) return null;
+  setBusy(true);
+  try {
+    const keptWords = song.lines.map(line => ({
+      words: (line.words || []).filter(word => word.verified && word.kana).map(word => ({ ...word }))
+    }));
+    const enriched = await enrichLyricLines(song.lines);
+    enriched.lines.forEach((line, lineIndex) => {
+      const kept = keptWords[lineIndex] ? keptWords[lineIndex].words : [];
+      if (!kept.length) return;
+      line.words.forEach(word => {
+        const hit = kept.find(item => item.surface === word.surface);
+        if (hit) {
+          word.kana = hit.kana;
+          word.zh = hit.zh || word.zh;
+          word.verified = true;
+          word.source = hit.source || "proofread";
+        }
+      });
+    });
+    song.lyric = enriched.lines[0] ? enriched.lines[0].ja : song.lyric;
+    song.romaji = enriched.lines[0] && enriched.lines[0].romaji ? enriched.lines[0].romaji : song.romaji;
+    song.zh = enriched.lines[0] && enriched.lines[0].zh ? enriched.lines[0].zh : song.zh;
+    song.lines = enriched.lines;
+    song.vocab = enriched.vocab;
+    song.grammarPointIds = enriched.grammarPointIds;
+    song.quizLine = (enriched.quiz && enriched.quiz.quizLine) || null;
+    song.options = (enriched.quiz && enriched.quiz.options) || [];
+    song.answer = (enriched.quiz && enriched.quiz.answer) || null;
+    song.enriched = true;
+    saveState();
+    renderSync();
+    renderSongs();
+    if (options.onDone) options.onDone(enriched);
+    return enriched;
+  } catch (error) {
+    song.enriched = true;
+    saveState();
+    return null;
+  } finally {
+    setBusy(false);
+  }
 }
 
 async function importLyricsFromForm() {
@@ -2006,30 +2083,23 @@ async function importLyricsFromForm() {
   }).filter(line => line.ja);
   const firstLine = lines[0].ja;
   const statusEl = $("#importStatus");
-  if (statusEl) statusEl.textContent = "正在拆解单词、匹配语法、生成发音…";
-  let enriched;
-  try {
-    enriched = await enrichLyricLines(lines);
-  } catch (error) {
-    enriched = { lines, vocab: [], grammarPointIds: [], quiz: null };
-  }
   const songData = {
     id: `custom-${Date.now()}`,
     title: title || firstLine.slice(0, 20),
     artist,
     search: `${title || firstLine} ${artist}`,
     neteaseId: neteaseId || null,
-    lyric: enriched.lines[0].ja,
-    romaji: enriched.lines[0].romaji || "",
-    zh: enriched.lines[0].zh || "",
-    lines: enriched.lines,
-    vocab: enriched.vocab,
+    lyric: firstLine,
+    romaji: lines[0].romaji || "",
+    zh: lines[0].zh || "",
+    lines,
+    vocab: [],
     grammar: grammarNote || "已自动匹配歌词中出现的语法点。",
-    grammarPointIds: enriched.grammarPointIds,
-    quizLine: (enriched.quiz && enriched.quiz.quizLine) || null,
-    options: (enriched.quiz && enriched.quiz.options) || [],
-    answer: (enriched.quiz && enriched.quiz.answer) || null,
-    enriched: true,
+    grammarPointIds: [],
+    quizLine: null,
+    options: [],
+    answer: null,
+    enriched: false,
     isCustom: true
   };
   let customSong;
@@ -2050,9 +2120,15 @@ async function importLyricsFromForm() {
   renderSync();
   renderSongs();
   switchView("songs");
-  if (statusEl) statusEl.textContent = `已解析 ${enriched.lines.length} 句歌词：拆出 ${enriched.vocab.length} 个生词，匹配 ${enriched.grammarPointIds.length} 个语法点。`;
-  toast("歌词已保存，开始学习吧");
-  autoVerifyReadings(customSong);
+  if (statusEl) statusEl.textContent = "已保存，正在后台解析单词与语法…";
+  toast("歌词已保存，正在解析中");
+  finishEnrichInBackground(customSong, {
+    onDone: enriched => {
+      if (statusEl) statusEl.textContent = `解析完成：${enriched.vocab.length} 个生词 · ${enriched.grammarPointIds.length} 个语法点`;
+      toast(`解析完成：${enriched.vocab.length} 个生词 · ${enriched.grammarPointIds.length} 个语法点`);
+      autoVerifyReadings(customSong);
+    }
+  });
 }
 
 async function fetchWithTimeout(url, timeout = 8000, options = {}) {
@@ -2069,7 +2145,7 @@ async function fetchNeteaseJson(path) {
   const publicBases = ["https://music.mcseekeri.com", "https://zm.wwoyun.cn"];
   for (const base of publicBases) {
     try {
-      const response = await fetchWithTimeout(base + path);
+      const response = await fetchWithTimeout(base + path, 5000);
       if (!response.ok) continue;
       const data = await response.json();
       if (data && (data.result || data.playlist || data.lrc || data.songs)) {
@@ -2087,7 +2163,7 @@ async function fetchJsonViaProxies(target) {
   const proxies = userProxy ? [userProxy] : NETEASE_PROXY_FALLBACKS;
   for (const proxy of proxies) {
     try {
-      const response = await fetchWithTimeout(proxy + encodeURIComponent(target));
+      const response = await fetchWithTimeout(proxy + encodeURIComponent(target), 20000);
       const text = await response.text();
       const parsed = JSON.parse(text);
       if (proxy.includes("allorigins.win/get")) {
@@ -2295,7 +2371,7 @@ function buildLineRomaji(line) {
 
 async function lookupJishoWord(token) {
   try {
-    const response = await fetchWithTimeout("https://jotoba.de/api/search/words", 6000, {
+    const response = await fetchWithTimeout("https://jotoba.de/api/search/words", 3500, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ query: token, language: "English", no_english: false })
@@ -2403,14 +2479,14 @@ async function enrichLyricLines(lines) {
         consecutiveFails = 0;
         continue;
       }
-      if (consecutiveFails >= 6) {
+      if (consecutiveFails >= 3) {
         results[index] = { ja: token, kana: "", zh: "未收录" };
         continue;
       }
       const remote = await lookupJishoWord(token);
       if (remote) {
         results[index] = Object.assign(remote, { source: "jotoba", verified: false });
-        state.wordCache[token] = results[index];
+        cacheWord(token, results[index]);
         consecutiveFails = 0;
       } else {
         results[index] = { ja: token, kana: "", zh: "未收录" };
@@ -2469,10 +2545,22 @@ async function fetchAndParseSongLyrics(song) {
 let kuromojiPromise = null;
 let kuromojiTokenizer = null;
 
+let kuromojiFailed = false;
+let kuromojiLoadTimer = null;
+
 function loadKuromoji() {
   if (kuromojiPromise) return kuromojiPromise;
+  if (kuromojiFailed) return Promise.resolve(null);
   if (typeof document === "undefined") return Promise.resolve(null);
   kuromojiPromise = new Promise(resolve => {
+    const finish = (tokenizer, failed) => {
+      window.clearTimeout(kuromojiLoadTimer);
+      if (failed) kuromojiFailed = true;
+      kuromojiPromise = null;
+      if (tokenizer) kuromojiTokenizer = tokenizer;
+      resolve(tokenizer);
+    };
+    kuromojiLoadTimer = window.setTimeout(() => finish(null, true), 25000);
     const bases = [
       "https://cdn.jsdelivr.net/npm/kuromoji@0.1.2",
       "https://unpkg.com/kuromoji@0.1.2"
@@ -2480,8 +2568,7 @@ function loadKuromoji() {
     let index = 0;
     function tryBase() {
       if (index >= bases.length) {
-        kuromojiPromise = null;
-        resolve(null);
+        finish(null, true);
         return;
       }
       const base = bases[index++];
@@ -2491,16 +2578,13 @@ function loadKuromoji() {
         try {
           kuromoji.builder({ dicPath: `${base}/dict` }).build((error, tokenizer) => {
             if (error || !tokenizer) {
-              kuromojiPromise = null;
-              resolve(null);
+              finish(null, true);
             } else {
-              kuromojiTokenizer = tokenizer;
-              resolve(tokenizer);
+              finish(tokenizer, false);
             }
           });
         } catch (error) {
-          kuromojiPromise = null;
-          resolve(null);
+          finish(null, true);
         }
       };
       script.onerror = () => {
@@ -2590,7 +2674,7 @@ function syncVocabFromLines(song) {
 }
 
 async function autoVerifyReadings(song) {
-  if (!song || !song.lines || !song.lines.length) return;
+  if (!song || !song.isCustom || !song.lines || !song.lines.length) return;
   const tokenizer = await loadKuromoji();
   if (!tokenizer) return;
   const applied = applyKuromojiReadings(song.lines);
@@ -2730,7 +2814,7 @@ function applyProofreadToSong(song, pastedText, romajiLines) {
 
 async function fetchHtmlViaChain(target) {
   try {
-    const direct = await fetchWithTimeout(target, 8000);
+    const direct = await fetchWithTimeout(target, 5000);
     if (direct.ok) {
       const text = await direct.text();
       if (text && text.length > 2000) return text;
@@ -2740,13 +2824,12 @@ async function fetchHtmlViaChain(target) {
   }
   const proxies = [
     { url: encoded => `https://api.allorigins.win/raw?url=${encoded}`, mode: "raw" },
-    { url: encoded => `https://api.allorigins.win/get?url=${encoded}`, mode: "get" },
-    { url: encoded => `https://api.codetabs.com/v1/proxy?quest=${encoded}`, mode: "raw" }
+    { url: encoded => `https://api.allorigins.win/get?url=${encoded}`, mode: "get" }
   ];
   for (const proxy of proxies) {
     try {
       const encoded = encodeURIComponent(target);
-      const response = await fetchWithTimeout(proxy.url(encoded), 30000);
+      const response = await fetchWithTimeout(proxy.url(encoded), 25000);
       const text = await response.text();
       if (proxy.mode === "get") {
         try {
@@ -2840,62 +2923,66 @@ async function fetchUtaTenReadings(song) {
   if (!song || !song.title) {
     return { error: "当前没有可校对的歌曲" };
   }
-  setStatus(`正在 utaten 搜索《${song.title}》…（代理抓取，约需十几秒）`);
-  const searchUrl = `https://utaten.com/search?title=${encodeURIComponent(song.title)}&artist_name=${encodeURIComponent(song.artist || "")}`;
-  const searchHtml = await fetchHtmlViaChain(searchUrl);
-  const results = extractUtaTenResults(searchHtml);
-  if (!results.length) {
-    return { error: "utaten 上没有搜到这首歌，可尝试手动粘贴注音" };
+  if (!song.isCustom) {
+    return { error: "内置歌曲的读音已由人工校对，无需抓取" };
   }
-  const best = pickBestUtaTenResult(results, song);
-  if (!best) {
-    return { error: "搜索结果与歌曲不匹配，可尝试手动粘贴注音" };
+  if (utatenFetching) {
+    return { error: "正在抓取另一首歌的注音，请稍候" };
   }
-  setStatus(`找到《${best.title}》，正在获取注音歌词…`);
-  const lyricHtml = await fetchHtmlViaChain(`https://utaten.com/lyric/${best.id}/`);
-  const parsed = extractUtaTenLyric(lyricHtml);
-  if (!parsed.furiganaLines.length) {
-    return { error: "歌词页没有取到注音内容" };
+  utatenFetching = true;
+  setBusy(true);
+  try {
+    setStatus(`正在 utaten 搜索《${song.title}》…（约需十几秒）`);
+    const searchUrl = `https://utaten.com/search?title=${encodeURIComponent(song.title)}&artist_name=${encodeURIComponent(song.artist || "")}`;
+    const searchHtml = await fetchHtmlViaChain(searchUrl);
+    const results = extractUtaTenResults(searchHtml);
+    if (!results.length) {
+      return { error: "utaten 上没有搜到这首歌，可尝试手动粘贴注音" };
+    }
+    const best = pickBestUtaTenResult(results, song);
+    if (!best) {
+      return { error: "搜索结果与歌曲不匹配，可尝试手动粘贴注音" };
+    }
+    setStatus(`找到《${best.title}》，正在获取注音歌词…`);
+    const lyricHtml = await fetchHtmlViaChain(`https://utaten.com/lyric/${best.id}/`);
+    const parsed = extractUtaTenLyric(lyricHtml);
+    if (!parsed.furiganaLines.length) {
+      return { error: "歌词页没有取到注音内容" };
+    }
+    setStatus("正在逐行应用 utaten 注音…");
+    const result = applyProofreadToSong(song, parsed.furiganaLines.join("\n"), parsed.romajiLines);
+    if (result.error) return result;
+    song.utatenSource = `${best.title} (utaten)`;
+    saveState();
+    renderSync();
+    renderSongs();
+    renderSongLesson();
+    return Object.assign(result, { source: `utaten · ${best.title}` });
+  } catch (error) {
+    return { error: "抓取失败，网络或代理不可用" };
+  } finally {
+    utatenFetching = false;
+    setBusy(false);
   }
-  setStatus("正在逐行应用 utaten 注音…");
-  const result = applyProofreadToSong(song, parsed.furiganaLines.join("\n"), parsed.romajiLines);
-  if (result.error) return result;
-  song.utatenSource = `${best.title} (utaten)`;
-  saveState();
-  renderSync();
-  renderSongs();
-  renderSongLesson();
-  return Object.assign(result, { source: `utaten · ${best.title}` });
 }
 
 function maybeAutoFetchUtaTen() {
-  if (!activeSong || activeSong.utatenAttempted) return;
-  if (activeSong.lines && activeSong.lines.length) {
-    const hasUnverified = activeSong.lines.some(line => (line.words || []).some(word => word.surface && !FUNCTION_WORDS.has(word.surface) && !word.verified));
-    if (!hasUnverified) return;
-  }
+  if (!activeSong || !activeSong.isCustom || activeSong.utatenAttempted) return;
+  if (utatenFetching) return;
+  if (typeof navigator !== "undefined" && navigator.onLine === false) return;
+  if (!activeSong.lines || !activeSong.lines.length) return;
+  const hasUnverified = activeSong.lines.some(line => (line.words || []).some(word => word.surface && !FUNCTION_WORDS.has(word.surface) && word.verified === false));
+  if (!hasUnverified) return;
   activeSong.utatenAttempted = true;
   fetchUtaTenReadings(activeSong);
 }
 
 async function upgradeStoredSongs() {
-  const pending = state.customSongs.filter(song => song.lines && song.lines.length && !song.enriched);
+  if (typeof navigator !== "undefined" && navigator.onLine === false) return;
+  const pending = state.customSongs.filter(song => song.lines && song.lines.length && !song.enriched).slice(0, 3);
   for (const song of pending) {
-    const cloned = song.lines.map(line => ({ ...line, words: [] }));
-    try {
-      const enriched = await enrichLyricLines(cloned);
-      song.lines = enriched.lines;
-      song.vocab = enriched.vocab;
-      song.grammarPointIds = enriched.grammarPointIds;
-      song.quizLine = (enriched.quiz && enriched.quiz.quizLine) || null;
-      song.options = (enriched.quiz && enriched.quiz.options) || [];
-      song.answer = (enriched.quiz && enriched.quiz.answer) || null;
-      song.enriched = true;
-      saveState();
-      autoVerifyReadings(song);
-    } catch (error) {
-      song.enriched = true;
-    }
+    await finishEnrichInBackground(song);
+    await new Promise(resolve => window.setTimeout(resolve, 800));
   }
   if (pending.length) {
     renderSync();
@@ -2930,8 +3017,8 @@ function renderSongSearchResults() {
   $("#songSearchResults").innerHTML = lastSearchResults.map((song, index) => `
     <div class="search-result">
       <div>
-        <h4>${song.title}</h4>
-        <p>${song.artist}${song.album ? ` · ${song.album}` : ""}</p>
+        <h4>${escapeHtml(song.title)}</h4>
+        <p>${escapeHtml(song.artist)}${song.album ? ` · ${escapeHtml(song.album)}` : ""}</p>
       </div>
       <button class="secondary-btn" data-search-song="${index}">获取歌词并解析</button>
     </div>
@@ -2942,9 +3029,10 @@ async function handleSearchSong(index) {
   const song = lastSearchResults[index];
   const status = $("#songSearchStatus");
   if (!song) return;
-  status.textContent = `正在获取《${song.title}》的完整歌词并解析…`;
-  const parsed = await fetchAndParseSongLyrics(song);
-  if (!parsed) {
+  status.textContent = `正在获取《${song.title}》的完整歌词…`;
+  const data = await fetchNeteaseJson(`/lyric?id=${song.id}&lv=-1&kv=-1&tv=-1`);
+  const parsedLines = parseLyricResponse(data);
+  if (!parsedLines.length) {
     status.textContent = "获取失败，网易云接口或代理不可用。";
     return;
   }
@@ -2955,17 +3043,17 @@ async function handleSearchSong(index) {
     artist: song.artist || "未知歌手",
     search: `${song.title} ${song.artist}`,
     neteaseId: song.id,
-    lyric: parsed.lines[0].ja,
-    romaji: parsed.lines[0].romaji || "",
-    zh: parsed.lines[0].zh || "",
-    lines: parsed.lines,
-    vocab: parsed.vocab,
+    lyric: parsedLines[0].ja,
+    romaji: parsedLines[0].romaji || "",
+    zh: parsedLines[0].zh || "",
+    lines: parsedLines,
+    vocab: [],
     grammar: "已自动匹配歌词中出现的语法点。",
-    grammarPointIds: parsed.grammarPointIds,
-    quizLine: (parsed.quiz && parsed.quiz.quizLine) || null,
-    options: (parsed.quiz && parsed.quiz.options) || [],
-    answer: (parsed.quiz && parsed.quiz.answer) || null,
-    enriched: true,
+    grammarPointIds: [],
+    quizLine: null,
+    options: [],
+    answer: null,
+    enriched: false,
     isCustom: true
   };
   if (existing) {
@@ -2980,30 +3068,30 @@ async function handleSearchSong(index) {
   renderSync();
   renderSongs();
   switchView("songs");
-  toast(`已解析《${song.title}》，共 ${parsed.lines.length} 句歌词`);
-  autoVerifyReadings(activeSong);
+  status.textContent = `已获取《${song.title}》${parsedLines.length} 句歌词，正在解析单词与语法…`;
+  finishEnrichInBackground(activeSong, {
+    onDone: enriched => {
+      status.textContent = `已解析《${song.title}》：${enriched.vocab.length} 个生词 · ${enriched.grammarPointIds.length} 个语法点`;
+      toast(`已解析《${song.title}》，共 ${parsedLines.length} 句歌词`);
+      autoVerifyReadings(activeSong);
+    }
+  });
 }
 
 async function reparseCustomSong(id) {
   const song = state.customSongs.find(item => item.id === id);
   if (!song || !song.lines || !song.lines.length) return;
   toast(`正在重新解析《${song.title}》…`);
-  const cloned = song.lines.map(line => ({ ...line, words: [] }));
-  try {
-    const enriched = await enrichLyricLines(cloned);
-    song.lines = enriched.lines;
-    song.vocab = enriched.vocab;
-    song.grammarPointIds = enriched.grammarPointIds;
-    song.quizLine = (enriched.quiz && enriched.quiz.quizLine) || null;
-    song.options = (enriched.quiz && enriched.quiz.options) || [];
-    song.answer = (enriched.quiz && enriched.quiz.answer) || null;
-    song.enriched = true;
-    saveState();
+  song.lines.forEach(line => {
+    line.words = [];
+  });
+  const enriched = await finishEnrichInBackground(song);
+  if (enriched) {
     renderSync();
     renderSongs();
     toast(`已重新解析：${enriched.vocab.length} 个生词 · ${enriched.grammarPointIds.length} 个语法点`);
     autoVerifyReadings(song);
-  } catch (error) {
+  } else {
     toast("重新解析失败，请检查网络");
   }
 }
@@ -3314,7 +3402,7 @@ document.addEventListener("click", event => {
         entry.source = "manual";
       }
     });
-    state.wordCache[surface] = { ja: surface, kana, zh: current ? current.zh : "", source: "manual", verified: true };
+    cacheWord(surface, { ja: surface, kana, zh: current ? current.zh : "", source: "manual", verified: true });
     activeSong.lines.forEach(line => {
       if (line.romajiFrom !== "proofread") line.romaji = buildLineRomaji(line);
     });

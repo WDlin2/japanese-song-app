@@ -1907,6 +1907,29 @@ button.word-chip:hover {
   margin: 0;
 }
 
+.busy-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 3px;
+  background: var(--teal);
+  z-index: 1000;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.busy-bar.active {
+  opacity: 1;
+  animation: busy-slide 1.4s ease-in-out infinite;
+}
+
+@keyframes busy-slide {
+  0% { width: 0; margin-left: 0; }
+  50% { width: 70%; }
+  100% { width: 0; margin-left: 100%; }
+}
+
 .toast {
   position: fixed;
   z-index: 80;

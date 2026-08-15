@@ -1,4 +1,4 @@
-const CACHE_NAME = "utago-learn-v5";
+const CACHE_NAME = "utago-learn-v6";
 const ASSETS = [
   "./",
   "./index.html",
@@ -29,6 +29,37 @@ self.addEventListener("activate", event => {
 
 self.addEventListener("fetch", event => {
   if (event.request.method !== "GET") return;
+  let requestUrl;
+  try {
+    requestUrl = new URL(event.request.url);
+  } catch (error) {
+    return;
+  }
+  if (requestUrl.origin !== location.origin) return;
+
+  const isCore = requestUrl.pathname === "/" ||
+    requestUrl.pathname === "/index.html" ||
+    requestUrl.pathname === "/app.js" ||
+    requestUrl.pathname === "/styles.css" ||
+    requestUrl.pathname === "/manifest.webmanifest";
+
+  if (isCore || event.request.mode === "navigate") {
+    event.respondWith(
+      fetch(event.request)
+        .then(response => {
+          if (response && response.status === 200) {
+            const copy = response.clone();
+            caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
+          }
+          return response;
+        })
+        .catch(() =>
+          caches.match(event.request).then(cached => cached || caches.match("./index.html"))
+        )
+    );
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request).then(cached => {
       const fetched = fetch(event.request)
