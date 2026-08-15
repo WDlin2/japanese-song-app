@@ -1,4 +1,4 @@
-const CACHE_NAME = "utago-learn-v6";
+const CACHE_NAME = "utago-learn-v7";
 const ASSETS = [
   "./",
   "./index.html",
@@ -44,8 +44,9 @@ self.addEventListener("fetch", event => {
     requestUrl.pathname === "/manifest.webmanifest";
 
   if (isCore || event.request.mode === "navigate") {
+    const bustedUrl = requestUrl.href + (requestUrl.search ? "&" : "?") + "v=" + CACHE_NAME;
     event.respondWith(
-      fetch(event.request)
+      fetch(bustedUrl, { cache: "no-store" })
         .then(response => {
           if (response && response.status === 200) {
             const copy = response.clone();

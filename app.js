@@ -1329,6 +1329,7 @@ let lastSyncedTracks = [];
 let editingCustomId = null;
 let lastSearchResults = [];
 let utatenFetching = false;
+let utatenBlocked = false;
 let busyCount = 0;
 let busyWatchdog = null;
 
@@ -1341,9 +1342,19 @@ function setBusy(active) {
     busyWatchdog = window.setTimeout(() => {
       busyCount = 0;
       if (bar) bar.classList.remove("active");
-    }, 90000);
+    }, 60000);
+  } else {
+    window.clearTimeout(busyWatchdog);
   }
 }
+
+window.addEventListener("visibilitychange", () => {
+  if (!document.hidden) {
+    busyCount = 0;
+    const bar = document.getElementById("busyBar");
+    if (bar) bar.classList.remove("active");
+  }
+});
 
 function escapeHtml(text) {
   return String(text == null ? "" : text)
@@ -2987,11 +2998,12 @@ async function fetchUtaTenReadings(song) {
   let timeoutId = null;
   try {
     const timeoutPromise = new Promise(resolve => {
-      timeoutId = window.setTimeout(() => resolve({ error: "自动注音超时：utaten 代理当前不可用，已用本地注音，可手动粘贴校对" }), 15000);
+      timeoutId = window.setTimeout(() => resolve({ error: "自动注音超时：utaten 代理当前不可用，已用本地注音，可手动粘贴校对" }), 10000);
     });
     const result = await Promise.race([runUtaTenFetch(song, setStatus), timeoutPromise]);
     window.clearTimeout(timeoutId);
     if (result.error) {
+      utatenBlocked = true;
       setStatus(result.error);
       toast("utaten 注音暂不可用（网络代理受限）");
     }
@@ -3007,6 +3019,7 @@ let utatenFetchTimer = null;
 let upgradeQueued = false;
 
 function maybeAutoFetchUtaTen() {
+  if (utatenBlocked) return;
   if (!activeSong || !activeSong.isCustom || activeSong.utatenAttempted) return;
   if (utatenFetching) return;
   if (typeof navigator !== "undefined" && navigator.onLine === false) return;
