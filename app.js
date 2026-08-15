@@ -2979,6 +2979,130 @@ async function runAIAfterEnrich(song, setStatus) {
   }
 }
 
+function buildAiReadingPrompt(batch) {
+  const lines = batch.map((line, index) => `[${index}] ${line.ja}`).join("\n");
+  return [
+    {
+      role: "system",
+      content: "你是日语读音校对助手。用户会给出若干行日语歌词，每行以 [序号] 开头。请为每行的每个词给出读音假名。\n" +
+        "硬性要求：\n" +
+        "1. kana 必须是纯平假名（ひらがな），绝不允许出现汉字或罗马音；读不出就留空字符串\n" +
+        "2. 按语境读音（如 今日→きょう、一人→ひとり、分かった→わかった、空→そら、日々→ひび、大人→おとな）\n" +
+        "3. 每个词单独列出，禁止合并助词\n" +
+        "只输出一个 JSON 对象：{\"lines\":[{\"index\":0,\"words\":[{\"surface\":\"沈む\",\"kana\":\"しずむ\"}]}]}。不要输出任何其他文字。"
+    },
+    { role: "user", content: lines }
+  ];
+}
+
+function applyAiReadingsToLine(songLine, aiLine) {
+  let applied = 0;
+  if (!Array.isArray(aiLine.words) || !Array.isArray(songLine.words)) return 0;
+  aiLine.words.forEach(item => {
+    const surface = String(item.surface || "").trim();
+    const kana = String(item.kana || "").trim();
+    if (!surface || !kana || /[\u3400-\u9fff]/.test(kana)) return;
+    const word = songLine.words.find(w => w.surface === surface);
+    if (word) {
+      word.kana = kana;
+      word.verified = true;
+      word.source = "ai-proofread";
+      applied += 1;
+    }
+  });
+  if (applied && songLine.romajiFrom !== "ai" && songLine.romajiFrom !== "proofread" && songLine.romajiFrom !== "utaten") {
+    const romaji = buildLineRomaji(songLine);
+    if (romaji) {
+      songLine.romaji = romaji;
+      if (!songLine.romajiFrom) songLine.romajiFrom = "auto";
+    }
+  }
+  return applied;
+}
+
+async function aiProofreadReadings(song, options = {}) {
+  const config = getAiConfig();
+  if (!config) return { error: "未配置 AI，请先到导入页设置 API Key" };
+  if (!song || !song.lines || !song.lines.length) return { error: "这首歌还没有歌词" };
+  const setStatus = options.onStatus || (() => {});
+  const pending = [];
+  song.lines.forEach((line, index) => {
+    const hasUnverified = (line.words || []).some(word => word.surface && !FUNCTION_WORDS.has(word.surface) && !word.verified);
+    if (hasUnverified) pending.push(index);
+  });
+  if (!pending.length) {
+    return { linesOk: 0, wordsApplied: 0, failedBatches: 0, skipped: true };
+  }
+  const batches = pending.map(index => song.lines.slice(index, index + 1));
+  let linesOk = 0;
+  let wordsApplied = 0;
+  let failedBatches = 0;
+  const songStillExists = () => state.customSongs.some(item => item.id === song.id);
+  const refreshLesson = () => {
+    if (!songStillExists()) return;
+    saveState();
+    renderSongLesson();
+  };
+  setBusy(true);
+  try {
+    let cursor = 0;
+    async function worker() {
+      while (cursor < batches.length) {
+        const batchIndex = cursor++;
+        const batch = batches[batchIndex];
+        setStatus(`AI 校对读音第 ${batchIndex + 1}/${batches.length} 句…`);
+        let content = null;
+        for (let attempt = 0; attempt < 2; attempt += 1) {
+          try {
+            content = await callChatCompletions(config, buildAiReadingPrompt(batch), 60000);
+            break;
+          } catch (error) {
+            if (attempt === 0) setStatus(`AI 第 ${batchIndex + 1} 句重试中…`);
+          }
+        }
+        if (!content) {
+          failedBatches += 1;
+          continue;
+        }
+        let data = null;
+        try {
+          data = parseAiLyricResponse(content);
+        } catch (error) {
+          failedBatches += 1;
+          continue;
+        }
+        if (data && Array.isArray(data.lines)) {
+          data.lines.forEach(aiLine => {
+            const lineIndex = pending[batchIndex];
+            if (lineIndex === undefined || lineIndex >= song.lines.length) return;
+            const applied = applyAiReadingsToLine(song.lines[lineIndex], aiLine);
+            wordsApplied += applied;
+            linesOk += 1;
+          });
+          refreshLesson();
+          setStatus(`AI 校对读音第 ${batchIndex + 1}/${batches.length} 句…（已校正 ${wordsApplied} 个词）`);
+        }
+      }
+    }
+    await Promise.all(Array.from({ length: 2 }, worker));
+    if (linesOk && songStillExists()) {
+      syncVocabFromLines(song);
+      saveState();
+      renderSync();
+      renderSongs();
+      renderSongLesson();
+    }
+    return {
+      linesOk,
+      wordsApplied,
+      failedBatches,
+      source: `${config.provider} · ${config.model}`
+    };
+  } finally {
+    setBusy(false);
+  }
+}
+
 async function upgradeStoredSongs() {
   if (typeof navigator !== "undefined" && navigator.onLine === false) return;
   if (utatenFetching || busyCount > 0) return;
@@ -3711,6 +3835,27 @@ $("#aiParseSong").addEventListener("click", async () => {
   }
   status.textContent = `AI 解析完成：${result.linesOk} 行 · ${result.wordsApplied} 个词${result.failedBatches ? ` · ${result.failedBatches} 句失败` : ""}`;
   toast(`AI 解析完成（${result.source}）`);
+});
+
+$("#aiProofreadReadings").addEventListener("click", async () => {
+  if (!activeSong) return;
+  const status = $("#proofreadStatus");
+  const result = await aiProofreadReadings(activeSong, {
+    onStatus: message => { if (status) status.textContent = message; }
+  });
+  if (!status) return;
+  if (result.error) {
+    status.textContent = result.error;
+    toast(result.error);
+    return;
+  }
+  if (result.skipped) {
+    status.textContent = "所有读音都已确认，无需校对";
+    toast("所有读音都已确认");
+    return;
+  }
+  status.textContent = `AI 读音校对完成：校正 ${result.wordsApplied} 个词${result.failedBatches ? ` · ${result.failedBatches} 句失败` : ""}`;
+  toast(`AI 读音校对完成：${result.wordsApplied} 个词`);
 });
 
 function renderAiSettings() {
