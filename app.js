@@ -1329,10 +1329,12 @@ let lastSyncedTracks = [];
 let editingCustomId = null;
 let lastSearchResults = [];
 let utatenFetching = false;
+let busyCount = 0;
 
 function setBusy(active) {
+  busyCount = Math.max(0, busyCount + (active ? 1 : -1));
   const bar = document.getElementById("busyBar");
-  if (bar) bar.classList.toggle("active", Boolean(active));
+  if (bar) bar.classList.toggle("active", busyCount > 0);
 }
 
 function escapeHtml(text) {
@@ -1653,7 +1655,7 @@ function renderSongLesson() {
             <strong>${escapeHtml(v.ja)}</strong>
             <span>${escapeHtml(v.kana || "…")}${v.verified === false ? " ?" : ""}</span>
             <span>${escapeHtml(v.zh)}</span>
-            <button class="kana-edit-btn" data-edit-kana="${escapeHtml(v.ja)}" title="手动修正假名">✎</button>
+            ${activeSong.isCustom ? `<button class="kana-edit-btn" data-edit-kana="${escapeHtml(v.ja)}" title="手动修正假名">✎</button>` : ""}
           </div>
         `).join("") : `<p>暂无自动词卡，歌词里的重点词会在你补充学习笔记后逐步积累。</p>`}
       </div>
@@ -3359,14 +3361,14 @@ document.addEventListener("click", event => {
     return;
   }
 
-  const grammarChip = event.target.closest("[data-grammar-id]");
+  const grammarChip = event.target.closest(".grammar-chip[data-grammar-id]");
   if (grammarChip) {
     switchView("grammar");
     const filter = $("#grammarFilter");
     if (filter) filter.value = "all";
     renderGrammar();
     const card = document.querySelector(`.grammar-card[data-grammar-id="${grammarChip.dataset.grammarId}"]`);
-    if (card) {
+    if (card && card.scrollIntoView) {
       card.scrollIntoView({ behavior: "smooth", block: "center" });
       card.classList.add("grammar-highlight");
       window.setTimeout(() => card.classList.remove("grammar-highlight"), 1800);
@@ -3485,7 +3487,7 @@ document.addEventListener("click", event => {
       $("#grammarNote").value = song.grammar && !song.grammar.startsWith("还没有学习笔记") ? song.grammar : "";
       switchView("sync");
       const importPanel = document.querySelector(".import-panel");
-      if (importPanel) importPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+      if (importPanel && importPanel.scrollIntoView) importPanel.scrollIntoView({ behavior: "smooth", block: "start" });
     }
     return;
   }
