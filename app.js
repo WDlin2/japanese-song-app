@@ -2866,6 +2866,13 @@ async function enrichSongWithAI(song, options = {}) {
   let linesOk = 0;
   let wordsApplied = 0;
   let failedBatches = 0;
+  const songStillExists = () => state.customSongs.some(item => item.id === song.id);
+  const refreshLesson = () => {
+    if (!songStillExists()) return;
+    saveState();
+    if (options.onLineDone) options.onLineDone();
+    renderSongLesson();
+  };
   setBusy(true);
   try {
     const results = new Array(batches.length);
@@ -2891,25 +2898,37 @@ async function enrichSongWithAI(song, options = {}) {
           failedBatches += 1;
           continue;
         }
+        let data = null;
         try {
-          results[batchIndex] = parseAiLyricResponse(content);
+          data = parseAiLyricResponse(content);
         } catch (error) {
           results[batchIndex] = null;
           failedBatches += 1;
+          continue;
+        }
+        results[batchIndex] = data;
+        if (data && Array.isArray(data.lines)) {
+          data.lines.forEach(aiLine => {
+            const lineIndex = batchIndex * batchSize + Number(aiLine.index || 0);
+            if (lineIndex < 0 || lineIndex >= song.lines.length) return;
+            const applied = applyAiLineToSongLine(song.lines[lineIndex], aiLine);
+            wordsApplied += applied;
+            linesOk += 1;
+            const line = song.lines[lineIndex];
+            if (!line.romaji && line.words && line.words.length) {
+              const romaji = buildLineRomaji(line);
+              if (romaji) {
+                line.romaji = romaji;
+                if (!line.romajiFrom) line.romajiFrom = "auto";
+              }
+            }
+          });
+          refreshLesson();
+          setStatus(`AI 解析第 ${batchIndex + 1}/${batches.length} 句…（已完成 ${linesOk} 句）`);
         }
       }
     }
     await Promise.all(Array.from({ length: 2 }, worker));
-    results.forEach((data, batchIndex) => {
-      if (!data || !Array.isArray(data.lines)) return;
-      data.lines.forEach(aiLine => {
-        const lineIndex = batchIndex * batchSize + Number(aiLine.index || 0);
-        if (lineIndex < 0 || lineIndex >= song.lines.length) return;
-        const applied = applyAiLineToSongLine(song.lines[lineIndex], aiLine);
-        wordsApplied += applied;
-        linesOk += 1;
-      });
-    });
     song.lines.forEach(line => {
       if (!line.romaji && line.words && line.words.length) {
         const romaji = buildLineRomaji(line);
@@ -2919,7 +2938,7 @@ async function enrichSongWithAI(song, options = {}) {
         }
       }
     });
-    if (linesOk) {
+    if (linesOk && songStillExists()) {
       const grammarMap = new Map();
       song.lines.forEach(line => {
         (line.aiGrammar || []).forEach(point => {
