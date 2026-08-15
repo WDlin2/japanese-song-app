@@ -2385,7 +2385,7 @@ function buildLineRomaji(line) {
 
 async function lookupJishoWord(token) {
   try {
-    const response = await fetchWithTimeout("https://jotoba.de/api/search/words", 3500, {
+    const response = await fetchWithTimeout("https://jotoba.de/api/search/words", 2500, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ query: token, language: "English", no_english: false })
@@ -2478,11 +2478,12 @@ async function enrichLyricLines(lines) {
     });
   });
 
-  const limit = 60;
+  const limit = 50;
   const lookups = uniqueTokens.slice(0, limit);
   const results = new Array(lookups.length);
   let cursor = 0;
   let consecutiveFails = 0;
+  const deadline = Date.now() + 6000;
   async function worker() {
     while (cursor < lookups.length) {
       const index = cursor++;
@@ -2493,7 +2494,7 @@ async function enrichLyricLines(lines) {
         consecutiveFails = 0;
         continue;
       }
-      if (consecutiveFails >= 3) {
+      if (consecutiveFails >= 3 || Date.now() > deadline) {
         results[index] = { ja: token, kana: "", zh: "未收录" };
         continue;
       }
@@ -2574,7 +2575,7 @@ function loadKuromoji() {
       if (tokenizer) kuromojiTokenizer = tokenizer;
       resolve(tokenizer);
     };
-    kuromojiLoadTimer = window.setTimeout(() => finish(null, true), 25000);
+    kuromojiLoadTimer = window.setTimeout(() => finish(null, true), 90000);
     const bases = [
       "https://cdn.jsdelivr.net/npm/kuromoji@0.1.2",
       "https://unpkg.com/kuromoji@0.1.2"
@@ -2689,9 +2690,18 @@ function syncVocabFromLines(song) {
 
 async function autoVerifyReadings(song) {
   if (!song || !song.isCustom || !song.lines || !song.lines.length) return;
+  const statusEl = $("#proofreadStatus");
+  if (statusEl && !song.proofread && !kuromojiFailed) {
+    statusEl.textContent = "正在后台下载发音词典（仅首次，约 16MB），稍后自动校正读音…";
+  }
   const tokenizer = await loadKuromoji();
   if (!tokenizer) return;
   const applied = applyKuromojiReadings(song.lines);
+  if (statusEl) {
+    statusEl.textContent = applied
+      ? `发音词典已就绪，已校正 ${applied} 个词的读音`
+      : "发音词典已就绪";
+  }
   if (!applied) return;
   syncVocabFromLines(song);
   saveState();
@@ -2843,7 +2853,7 @@ async function fetchHtmlViaChain(target) {
   for (const proxy of proxies) {
     try {
       const encoded = encodeURIComponent(target);
-      const response = await fetchWithTimeout(proxy.url(encoded), 20000);
+      const response = await fetchWithTimeout(proxy.url(encoded), 8000);
       const text = await response.text();
       if (proxy.mode === "get") {
         try {
@@ -2929,6 +2939,35 @@ function extractUtaTenLyric(html) {
   return { furiganaLines, romajiLines };
 }
 
+async function runUtaTenFetch(song, setStatus) {
+  setStatus(`正在 utaten 搜索《${song.title}》…`);
+  const searchUrl = `https://utaten.com/search?title=${encodeURIComponent(song.title)}&artist_name=${encodeURIComponent(song.artist || "")}`;
+  const searchHtml = await fetchHtmlViaChain(searchUrl);
+  const results = extractUtaTenResults(searchHtml);
+  if (!results.length) {
+    return { error: "utaten 上没有搜到这首歌，可尝试手动粘贴注音" };
+  }
+  const best = pickBestUtaTenResult(results, song);
+  if (!best) {
+    return { error: "搜索结果与歌曲不匹配，可尝试手动粘贴注音" };
+  }
+  setStatus(`找到《${best.title}》，正在获取注音歌词…`);
+  const lyricHtml = await fetchHtmlViaChain(`https://utaten.com/lyric/${best.id}/`);
+  const parsed = extractUtaTenLyric(lyricHtml);
+  if (!parsed.furiganaLines.length) {
+    return { error: "歌词页没有取到注音内容" };
+  }
+  setStatus("正在逐行应用 utaten 注音…");
+  const result = applyProofreadToSong(song, parsed.furiganaLines.join("\n"), parsed.romajiLines);
+  if (result.error) return result;
+  song.utatenSource = `${best.title} (utaten)`;
+  saveState();
+  renderSync();
+  renderSongs();
+  renderSongLesson();
+  return Object.assign(result, { source: `utaten · ${best.title}` });
+}
+
 async function fetchUtaTenReadings(song) {
   const statusEl = $("#proofreadStatus");
   const setStatus = message => {
@@ -2945,36 +2984,20 @@ async function fetchUtaTenReadings(song) {
   }
   utatenFetching = true;
   setBusy(true);
+  let timeoutId = null;
   try {
-    setStatus(`正在 utaten 搜索《${song.title}》…（约需十几秒）`);
-    const searchUrl = `https://utaten.com/search?title=${encodeURIComponent(song.title)}&artist_name=${encodeURIComponent(song.artist || "")}`;
-    const searchHtml = await fetchHtmlViaChain(searchUrl);
-    const results = extractUtaTenResults(searchHtml);
-    if (!results.length) {
-      return { error: "utaten 上没有搜到这首歌，可尝试手动粘贴注音" };
+    const timeoutPromise = new Promise(resolve => {
+      timeoutId = window.setTimeout(() => resolve({ error: "自动注音超时：utaten 代理当前不可用，已用本地注音，可手动粘贴校对" }), 15000);
+    });
+    const result = await Promise.race([runUtaTenFetch(song, setStatus), timeoutPromise]);
+    window.clearTimeout(timeoutId);
+    if (result.error) {
+      setStatus(result.error);
+      toast("utaten 注音暂不可用（网络代理受限）");
     }
-    const best = pickBestUtaTenResult(results, song);
-    if (!best) {
-      return { error: "搜索结果与歌曲不匹配，可尝试手动粘贴注音" };
-    }
-    setStatus(`找到《${best.title}》，正在获取注音歌词…`);
-    const lyricHtml = await fetchHtmlViaChain(`https://utaten.com/lyric/${best.id}/`);
-    const parsed = extractUtaTenLyric(lyricHtml);
-    if (!parsed.furiganaLines.length) {
-      return { error: "歌词页没有取到注音内容" };
-    }
-    setStatus("正在逐行应用 utaten 注音…");
-    const result = applyProofreadToSong(song, parsed.furiganaLines.join("\n"), parsed.romajiLines);
-    if (result.error) return result;
-    song.utatenSource = `${best.title} (utaten)`;
-    saveState();
-    renderSync();
-    renderSongs();
-    renderSongLesson();
-    return Object.assign(result, { source: `utaten · ${best.title}` });
-  } catch (error) {
-    return { error: "抓取失败，网络或代理不可用" };
+    return result;
   } finally {
+    window.clearTimeout(timeoutId);
     utatenFetching = false;
     setBusy(false);
   }
