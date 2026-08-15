@@ -151,6 +151,7 @@
           <p class="sync-status">从 utaten / 歌ネット 等网站复制带注音的歌词粘贴到这里，程序会逐行匹配并应用站方注音（格式：漢字(かな)）。校对过的词显示 ✔，灰色带 ? 的词是自动推测、未被确认的读音。</p>
           <textarea id="proofreadInput" rows="6" placeholder="夢(ゆめ)ならばどれほどよかったでしょう&#10;未だに(いまだに)あなたのことを夢(ゆめ)にみる"></textarea>
           <div class="proofread-actions">
+            <button class="primary-btn" id="aiParseSong">AI 解析歌词</button>
             <button class="secondary-btn" id="autoProofread">自动从 utaten 获取注音</button>
             <button class="primary-btn" id="applyProofread">应用注音校对</button>
           </div>
@@ -258,6 +259,36 @@
       </article>
 
       <div class="custom-list" id="customSongList"></div>
+
+      <article class="panel sync-panel ai-settings-panel">
+        <div class="panel-head">
+          <div>
+            <span class="eyebrow">AI 解析设置</span>
+            <h3>让 AI 解析歌词：读音、翻译与语法讲解</h3>
+          </div>
+        </div>
+        <div class="sync-body">
+          <p class="sync-status">配置后可自动/手动用 AI 解析歌词：逐词语境假名 + 中文翻译 + 语法讲解（一次替代词典、翻译和正则匹配）。Key 只保存在你的浏览器里，不会上传。</p>
+          <div class="import-fields">
+            <select id="aiProvider" aria-label="选择服务商">
+              <option value="deepseek">DeepSeek（推荐，便宜）</option>
+              <option value="glm">智谱 GLM（glm-4-flash 免费）</option>
+              <option value="qwen">通义千问（DashScope）</option>
+              <option value="opencode-go">opencode-go（需代理部署）</option>
+              <option value="custom">自定义 OpenAI 兼容</option>
+            </select>
+            <input id="aiBaseUrl" placeholder="API 地址（自定义时填写，默认自动）">
+            <input id="aiModel" placeholder="模型名（默认自动）">
+            <input id="aiKey" type="password" placeholder="API Key" autocomplete="off">
+          </div>
+          <div class="proofread-actions">
+            <button class="primary-btn" id="saveAiConfig">保存配置</button>
+            <button class="ghost-btn" id="testAiConfig">测试连接</button>
+            <button class="ghost-btn" id="clearAiConfig">清除</button>
+          </div>
+          <p class="sync-status" id="aiStatus"></p>
+        </div>
+      </article>
     </section>
 
     <section id="view-anime" class="view">

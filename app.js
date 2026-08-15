@@ -1699,7 +1699,21 @@ function renderSongLesson() {
               `).join("")}
             </div>
           </div>
-        `).join("") : `<p>${activeSong.grammar || "还没有语法笔记，可以到导入页补充学习重点。"}</p>`}
+        `).join("") : ""}
+        ${(activeSong.aiGrammar || []).map(point => `
+          <div class="mini-grammar ai-grammar">
+            <span class="pattern">${escapeHtml(point.pattern)}</span>
+            <h6>${escapeHtml(point.title)}<span class="ai-tag">AI</span></h6>
+            <p>${escapeHtml(point.explain)}</p>
+            ${point.example_ja ? `<div class="example-list compact">
+              <div class="example-row">
+                <div><strong>${escapeHtml(point.example_ja)}</strong></div>
+                <small>${escapeHtml(point.example_zh || "")}</small>
+              </div>
+            </div>` : ""}
+          </div>
+        `).join("")}
+        ${!grammarPoints.length && !(activeSong.aiGrammar || []).length ? `<p>${activeSong.grammar || "还没有语法笔记，可以到导入页补充学习重点。"}</p>` : ""}
       </div>
     </div>
     ${activeSong.quizLine && activeSong.options && activeSong.options.length ? `
@@ -1720,7 +1734,6 @@ function renderSongLesson() {
     `}
   `;
   renderActiveLyricLine();
-  maybeAutoFetchUtaTen();
 }
 
 function renderActiveLyricLine() {
@@ -1752,11 +1765,16 @@ function renderActiveLyricLine() {
     </button>
   `).join("");
   $("#activeLineWords").innerHTML = chips || `<span class="word-chip"><strong>${line.ja}</strong><small>点右上角播放听原句</small></span>`;
-  const lineGrammar = detectGrammarIds(line.ja)
-    .map(id => GRAMMAR_POINTS.find(point => point.id === id))
-    .filter(Boolean);
+  const lineGrammar = [
+    ...detectGrammarIds(line.ja)
+      .map(id => GRAMMAR_POINTS.find(point => point.id === id))
+      .filter(Boolean),
+    ...(line.aiGrammar || []).map(point => ({ id: null, pattern: point.pattern, title: point.title }))
+  ];
   $("#lineGrammar").innerHTML = lineGrammar.length
-    ? lineGrammar.map(point => `<button class="grammar-chip" data-grammar-id="${point.id}">${point.pattern} ${point.title}</button>`).join("")
+    ? lineGrammar.map(point => point.id
+      ? `<button class="grammar-chip" data-grammar-id="${point.id}">${point.pattern} ${point.title}</button>`
+      : `<span class="grammar-chip ai" title="${escapeHtml(point.pattern)}：${escapeHtml(point.title)}（AI 讲解见下方语法区）">${point.pattern} ${point.title}<span class="ai-tag">AI</span></span>`).join("")
     : `<span class="grammar-chip muted">本句暂未匹配到已收录语法点</span>`;
   $("#prevLine").disabled = lines.length < 2;
   $("#nextLine").disabled = lines.length < 2;
@@ -1889,10 +1907,11 @@ function renderCustomSongs() {
       <div class="custom-song">
         <div>
           <h4>${escapeHtml(song.title)}</h4>
-          <p>${escapeHtml(song.artist)} · ${song.lines && song.lines.length ? `${song.lines.length} 句歌词` : "还没有歌词"}${song.proofread ? `<span class="track-tag match">已校对</span>` : ""}</p>
+          <p>${escapeHtml(song.artist)} · ${song.lines && song.lines.length ? `${song.lines.length} 句歌词` : "还没有歌词"}${song.proofread ? `<span class="track-tag match">已校对</span>` : ""}${song.aiParsed ? `<span class="track-tag match">AI</span>` : ""}</p>
         </div>
         <div class="custom-actions">
           <button class="primary-btn" data-custom-open="${song.id}">开始学习</button>
+          <button class="ghost-btn" data-ai-parse="${song.id}">AI 解析</button>
           <button class="ghost-btn" data-reparse="${song.id}">重新解析</button>
           <button class="ghost-btn" data-edit-custom="${song.id}">补歌词</button>
           <button class="danger-btn" data-remove-custom="${song.id}">删除</button>
@@ -1905,6 +1924,7 @@ function renderCustomSongs() {
 function renderSync() {
   renderSyncTracks();
   renderCustomSongs();
+  renderAiSettings();
 }
 
 async function syncPlaylist() {
@@ -2037,7 +2057,7 @@ async function fetchLyricsForTrack(index) {
   finishEnrichInBackground(existing || songData, {
     onDone: enriched => {
       status.textContent = `已获取 ${track.title} 的 ${parsedLines.length} 句歌词：${enriched.vocab.length} 个生词 · ${enriched.grammarPointIds.length} 个语法点`;
-      autoVerifyReadings(existing || songData);
+      runAIAfterEnrich(existing || songData, text => { status.textContent = text; });
     }
   });
 }
@@ -2150,8 +2170,7 @@ async function importLyricsFromForm() {
   finishEnrichInBackground(customSong, {
     onDone: enriched => {
       if (statusEl) statusEl.textContent = `解析完成：${enriched.vocab.length} 个生词 · ${enriched.grammarPointIds.length} 个语法点`;
-      toast(`解析完成：${enriched.vocab.length} 个生词 · ${enriched.grammarPointIds.length} 个语法点`);
-      autoVerifyReadings(customSong);
+      runAIAfterEnrich(customSong, text => { if (statusEl) statusEl.textContent = text; });
     }
   });
 }
@@ -2568,117 +2587,6 @@ async function fetchAndParseSongLyrics(song) {
   return enrichLyricLines(lines);
 }
 
-let kuromojiPromise = null;
-let kuromojiTokenizer = null;
-
-let kuromojiFailed = false;
-let kuromojiLoadTimer = null;
-
-function loadKuromoji() {
-  if (kuromojiPromise) return kuromojiPromise;
-  if (kuromojiFailed) return Promise.resolve(null);
-  if (typeof document === "undefined") return Promise.resolve(null);
-  kuromojiPromise = new Promise(resolve => {
-    const finish = (tokenizer, failed) => {
-      window.clearTimeout(kuromojiLoadTimer);
-      if (failed) kuromojiFailed = true;
-      kuromojiPromise = null;
-      if (tokenizer) kuromojiTokenizer = tokenizer;
-      resolve(tokenizer);
-    };
-    kuromojiLoadTimer = window.setTimeout(() => finish(null, true), 90000);
-    const bases = [
-      "https://cdn.jsdelivr.net/npm/kuromoji@0.1.2",
-      "https://unpkg.com/kuromoji@0.1.2"
-    ];
-    let index = 0;
-    function tryBase() {
-      if (index >= bases.length) {
-        finish(null, true);
-        return;
-      }
-      const base = bases[index++];
-      const script = document.createElement("script");
-      script.src = `${base}/build/kuromoji.js`;
-      script.onload = () => {
-        try {
-          kuromoji.builder({ dicPath: `${base}/dict` }).build((error, tokenizer) => {
-            if (error || !tokenizer) {
-              finish(null, true);
-            } else {
-              finish(tokenizer, false);
-            }
-          });
-        } catch (error) {
-          finish(null, true);
-        }
-      };
-      script.onerror = () => {
-        script.remove();
-        tryBase();
-      };
-      document.head.appendChild(script);
-    }
-    tryBase();
-  });
-  return kuromojiPromise;
-}
-
-function applyKuromojiReadings(lines) {
-  if (!kuromojiTokenizer) return 0;
-  let applied = 0;
-  lines.forEach(line => {
-    if (!line.ja) return;
-    let kuromojiTokens;
-    try {
-      kuromojiTokens = kuromojiTokenizer.tokenize(line.ja);
-    } catch (error) {
-      return;
-    }
-    let offset = 0;
-    const positioned = kuromojiTokens.map(token => {
-      const index = line.ja.indexOf(token.surface_form, offset);
-      const start = index < 0 ? offset : index;
-      offset = Math.max(offset, start + token.surface_form.length);
-      return {
-        start,
-        end: offset,
-        reading: token.reading ? kanaToHiragana(token.reading) : token.surface_form
-      };
-    });
-    let pointer = 0;
-    let pos = 0;
-    line.words.forEach(word => {
-      if (word.verified) {
-        const found = line.ja.indexOf(word.surface, pos);
-        if (found >= 0) pos = found + word.surface.length;
-        return;
-      }
-      const start = line.ja.indexOf(word.surface, pos);
-      if (start < 0) return;
-      const end = start + word.surface.length;
-      pos = end;
-      while (pointer < positioned.length && positioned[pointer].end <= start) pointer += 1;
-      const covering = [];
-      let probe = pointer;
-      while (probe < positioned.length && positioned[probe].start < end) {
-        covering.push(positioned[probe]);
-        probe += 1;
-      }
-      if (covering.length && covering[0].start <= start && covering[covering.length - 1].end >= end) {
-        const joined = covering.map(item => item.reading).join("");
-        if (joined && !/[\u3400-\u9fff]/.test(joined)) {
-          word.kana = joined;
-          word.verified = true;
-          word.source = "kuromoji";
-          applied += 1;
-        }
-      }
-    });
-  });
-  return applied;
-}
-
 function syncVocabFromLines(song) {
   if (!song || !song.lines) return;
   (song.vocab || []).forEach(entry => {
@@ -2697,26 +2605,6 @@ function syncVocabFromLines(song) {
       entry.source = found.source;
     }
   });
-}
-
-async function autoVerifyReadings(song) {
-  if (!song || !song.isCustom || !song.lines || !song.lines.length) return;
-  const statusEl = $("#proofreadStatus");
-  if (statusEl && !song.proofread && !kuromojiFailed) {
-    statusEl.textContent = "正在后台下载发音词典（仅首次，约 16MB），稍后自动校正读音…";
-  }
-  const tokenizer = await loadKuromoji();
-  if (!tokenizer) return;
-  const applied = applyKuromojiReadings(song.lines);
-  if (statusEl) {
-    statusEl.textContent = applied
-      ? `发音词典已就绪，已校正 ${applied} 个词的读音`
-      : "发音词典已就绪";
-  }
-  if (!applied) return;
-  syncVocabFromLines(song);
-  saveState();
-  renderSongLesson();
 }
 
 function normalizeLyric(text) {
@@ -3018,21 +2906,224 @@ async function fetchUtaTenReadings(song) {
 let utatenFetchTimer = null;
 let upgradeQueued = false;
 
-function maybeAutoFetchUtaTen() {
-  if (utatenBlocked) return;
-  if (!activeSong || !activeSong.isCustom || activeSong.utatenAttempted) return;
-  if (utatenFetching) return;
-  if (typeof navigator !== "undefined" && navigator.onLine === false) return;
-  if (!activeSong.lines || !activeSong.lines.length) return;
-  const hasUnverified = activeSong.lines.some(line => (line.words || []).some(word => word.surface && !FUNCTION_WORDS.has(word.surface) && word.verified === false));
-  if (!hasUnverified) return;
-  const targetSong = activeSong;
-  window.clearTimeout(utatenFetchTimer);
-  utatenFetchTimer = window.setTimeout(() => {
-    if (activeSong !== targetSong) return;
-    targetSong.utatenAttempted = true;
-    fetchUtaTenReadings(targetSong);
-  }, 1200);
+const AI_PRESETS = {
+  "deepseek": { baseUrl: "https://api.deepseek.com/v1", model: "deepseek-chat" },
+  "glm": { baseUrl: "https://open.bigmodel.cn/api/paas/v4", model: "glm-4-flash" },
+  "qwen": { baseUrl: "https://dashscope.aliyuncs.com/compatible-mode/v1", model: "qwen-turbo" },
+  "opencode-go": { baseUrl: "https://opencode.ai/zen/go/v1", model: "deepseek-v4-flash" },
+  "custom": { baseUrl: "", model: "" }
+};
+
+const AI_PROVIDER_NOTES = {
+  "opencode-go": "opencode-go 官方端点不支持浏览器直连，需部署 Cloudflare Worker 代理（仓库 ai-proxy-worker.js 已附带说明）：把代理地址填进下方 API 地址，Key 可随意填。"
+};
+
+function getAiConfig() {
+  const config = state.aiConfig;
+  if (!config || !config.apiKey) return null;
+  const preset = AI_PRESETS[config.provider] || AI_PRESETS.custom;
+  return {
+    provider: config.provider,
+    apiKey: config.apiKey,
+    baseUrl: (config.baseUrl || preset.baseUrl).replace(/\/+$/, ""),
+    model: config.model || preset.model
+  };
+}
+
+async function callChatCompletions(config, messages, timeoutMs = 90000) {
+  const response = await fetchWithTimeout(`${config.baseUrl}/chat/completions`, timeoutMs, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${config.apiKey}`
+    },
+    body: JSON.stringify({
+      model: config.model,
+      messages,
+      temperature: 0.3,
+      max_tokens: 8000
+    })
+  });
+  if (!response.ok) {
+    let detail = `HTTP ${response.status}`;
+    try {
+      const data = await response.json();
+      detail = (data.error && data.error.message) || detail;
+    } catch (error) {
+      // 保留状态码信息
+    }
+    throw new Error(detail);
+  }
+  const data = await response.json();
+  const content = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+  if (!content) throw new Error("AI 返回为空");
+  return content;
+}
+
+function parseAiLyricResponse(content) {
+  let text = String(content || "").trim();
+  text = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+  const start = text.indexOf("{");
+  const end = text.lastIndexOf("}");
+  if (start < 0 || end <= start) throw new Error("AI 返回不是 JSON");
+  return JSON.parse(text.slice(start, end + 1));
+}
+
+function buildAiLyricPrompt(batch) {
+  const lines = batch.map((line, index) => `[${index}] ${line.ja}`).join("\n");
+  return [
+    {
+      role: "system",
+      content: "你是日语歌词学习助手。用户会给出若干行日语歌词，每行以 [序号] 开头。请对每一行输出：\n" +
+        "1. zh：中文翻译（自然通顺）\n" +
+        "2. romaji：整句罗马音（按单词空格分隔）\n" +
+        "3. words：逐词拆解数组，元素为 {surface: 原词, kana: 读音假名, zh: 中文意思}。注意：\n" +
+        "   - 按歌词实际形态分词（保留送假名，如「忘れて」是一个词）\n" +
+        "   - 假名必须是该句语境读音（如 今日→きょう、一人→ひとり、分かった→わかった），不能给其他读音\n" +
+        "   - 助词如 は/を/に 可并入前词或单独列出均可\n" +
+        "4. grammar：该行出现的语法点数组，元素为 {pattern: 句型（如 〜てください）, title: 简短名称, explain: 中文讲解（1-2句）, example_ja: 一个例句, example_zh: 例句中文}。没有明显语法点可返回空数组。\n" +
+        "只输出一个 JSON 对象，格式：{\"lines\":[{\"index\":0,\"zh\":\"...\",\"romaji\":\"...\",\"words\":[{\"surface\":\"...\",\"kana\":\"...\",\"zh\":\"...\"}],\"grammar\":[{\"pattern\":\"...\",\"title\":\"...\",\"explain\":\"...\",\"example_ja\":\"...\",\"example_zh\":\"...\"}]}]}。不要输出任何其他文字。"
+    },
+    { role: "user", content: lines }
+  ];
+}
+
+function applyAiLineToSongLine(songLine, aiLine) {
+  let applied = 0;
+  if (Array.isArray(aiLine.words) && aiLine.words.length) {
+    const merged = [];
+    const seen = new Set();
+    aiLine.words.forEach(item => {
+      const surface = String(item.surface || "").trim();
+      if (!surface) return;
+      if (seen.has(surface)) return;
+      seen.add(surface);
+      merged.push({
+        surface,
+        kana: String(item.kana || "").trim() || surface,
+        zh: String(item.zh || "").trim() || "",
+        verified: true,
+        source: "ai"
+      });
+      applied += 1;
+    });
+    if (merged.length) songLine.words = merged;
+  }
+  if (aiLine.zh && !songLine.zh) songLine.zh = String(aiLine.zh).trim();
+  if (aiLine.romaji) {
+    songLine.romaji = String(aiLine.romaji).trim();
+    songLine.romajiFrom = "ai";
+  }
+  if (Array.isArray(aiLine.grammar) && aiLine.grammar.length) {
+    songLine.aiGrammar = aiLine.grammar
+      .map(item => ({
+        pattern: String(item.pattern || "").trim(),
+        title: String(item.title || "").trim(),
+        explain: String(item.explain || "").trim(),
+        example_ja: String(item.example_ja || "").trim(),
+        example_zh: String(item.example_zh || "").trim()
+      }))
+      .filter(item => item.pattern);
+  }
+  return applied;
+}
+
+async function enrichSongWithAI(song, options = {}) {
+  const config = getAiConfig();
+  if (!config) return { error: "未配置 AI，请先到导入页设置 API Key" };
+  if (!song || !song.lines || !song.lines.length) return { error: "这首歌还没有歌词" };
+  const setStatus = options.onStatus || (() => {});
+  const batchSize = 15;
+  const batches = [];
+  for (let i = 0; i < song.lines.length; i += batchSize) {
+    batches.push(song.lines.slice(i, i + batchSize));
+  }
+  let linesOk = 0;
+  let wordsApplied = 0;
+  let failedBatches = 0;
+  setBusy(true);
+  try {
+    const results = new Array(batches.length);
+    let cursor = 0;
+    async function worker() {
+      while (cursor < batches.length) {
+        const batchIndex = cursor++;
+        const batch = batches[batchIndex];
+        setStatus(`AI 解析第 ${batchIndex + 1}/${batches.length} 批…`);
+        let content = null;
+        for (let attempt = 0; attempt < 2; attempt += 1) {
+          try {
+            content = await callChatCompletions(config, buildAiLyricPrompt(batch));
+            break;
+          } catch (error) {
+            if (attempt === 0) {
+              setStatus(`AI 第 ${batchIndex + 1} 批重试中…`);
+            }
+          }
+        }
+        if (!content) {
+          results[batchIndex] = null;
+          failedBatches += 1;
+          continue;
+        }
+        try {
+          results[batchIndex] = parseAiLyricResponse(content);
+        } catch (error) {
+          results[batchIndex] = null;
+          failedBatches += 1;
+        }
+      }
+    }
+    await Promise.all(Array.from({ length: 2 }, worker));
+    results.forEach((data, batchIndex) => {
+      if (!data || !Array.isArray(data.lines)) return;
+      data.lines.forEach(aiLine => {
+        const lineIndex = batchIndex * batchSize + Number(aiLine.index || 0);
+        if (lineIndex < 0 || lineIndex >= song.lines.length) return;
+        const applied = applyAiLineToSongLine(song.lines[lineIndex], aiLine);
+        wordsApplied += applied;
+        linesOk += 1;
+      });
+    });
+    if (linesOk) {
+      const grammarMap = new Map();
+      song.lines.forEach(line => {
+        (line.aiGrammar || []).forEach(point => {
+          if (!grammarMap.has(point.pattern)) grammarMap.set(point.pattern, point);
+        });
+      });
+      song.aiGrammar = Array.from(grammarMap.values());
+      song.aiParsed = true;
+      song.proofread = true;
+      syncVocabFromLines(song);
+      saveState();
+      renderSync();
+      renderSongs();
+      renderSongLesson();
+    }
+    return {
+      batches: batches.length,
+      linesOk,
+      wordsApplied,
+      failedBatches,
+      source: `${config.provider} · ${config.model}`
+    };
+  } finally {
+    setBusy(false);
+  }
+}
+
+async function runAIAfterEnrich(song, setStatus) {
+  if (!getAiConfig()) return;
+  const result = await enrichSongWithAI(song, { onStatus: setStatus });
+  if (!result) return;
+  if (result.error) {
+    setStatus(`AI 解析未执行：${result.error}`);
+  } else {
+    const stats = `AI 解析完成：${result.linesOk} 行 · ${result.wordsApplied} 个词${result.failedBatches ? ` · ${result.failedBatches} 批失败` : ""}`;
+    setStatus(stats);
+    toast(`AI 解析完成（${result.source}）`);
+  }
 }
 
 async function upgradeStoredSongs() {
@@ -3132,7 +3223,7 @@ async function handleSearchSong(index) {
     onDone: enriched => {
       status.textContent = `已解析《${song.title}》：${enriched.vocab.length} 个生词 · ${enriched.grammarPointIds.length} 个语法点`;
       toast(`已解析《${song.title}》，共 ${parsedLines.length} 句歌词`);
-      autoVerifyReadings(activeSong);
+      runAIAfterEnrich(activeSong, text => { status.textContent = text; });
     }
   });
 }
@@ -3149,7 +3240,7 @@ async function reparseCustomSong(id) {
     renderSync();
     renderSongs();
     toast(`已重新解析：${enriched.vocab.length} 个生词 · ${enriched.grammarPointIds.length} 个语法点`);
-    autoVerifyReadings(song);
+    runAIAfterEnrich(song, text => toast(text));
   } else {
     toast("重新解析失败，请检查网络");
   }
@@ -3532,6 +3623,19 @@ document.addEventListener("click", event => {
     return;
   }
 
+  const aiParseButton = event.target.closest("[data-ai-parse]");
+  if (aiParseButton) {
+    const song = state.customSongs.find(item => item.id === aiParseButton.dataset.aiParse);
+    if (song) {
+      enrichSongWithAI(song, {
+        onStatus: message => { const statusEl = $("#proofreadStatus"); if (statusEl) statusEl.textContent = message; }
+      }).then(result => {
+        if (result && result.error) toast(result.error);
+      });
+    }
+    return;
+  }
+
   const editCustomButton = event.target.closest("[data-edit-custom]");
   if (editCustomButton) {
     const song = state.customSongs.find(item => item.id === editCustomButton.dataset.editCustom);
@@ -3702,8 +3806,7 @@ $("#importSongList").addEventListener("click", importSongListText);
 $("#importLyrics").addEventListener("click", importLyricsFromForm);
 $("#searchSong").addEventListener("click", searchSongs);
 
-$("#applyProofread").addEventListener("click", () => {
-  if (!activeSong) return;
+$("#applyProofread").addEventListener("click", () => {  if (!activeSong) return;
   const result = applyProofreadToSong(activeSong, $("#proofreadInput").value);
   const status = $("#proofreadStatus");
   if (!status) return;
@@ -3741,6 +3844,102 @@ $("#autoProofread").addEventListener("click", async () => {
     button.disabled = false;
   }
 });
+$("#aiParseSong").addEventListener("click", async () => {
+  if (!activeSong) return;
+  const status = $("#proofreadStatus");
+  const result = await enrichSongWithAI(activeSong, {
+    onStatus: message => { if (status) status.textContent = message; }
+  });
+  if (!status) return;
+  if (result.error) {
+    status.textContent = result.error;
+    toast(result.error);
+    return;
+  }
+  status.textContent = `AI 解析完成：${result.linesOk} 行 · ${result.wordsApplied} 个词${result.failedBatches ? ` · ${result.failedBatches} 批失败` : ""}`;
+  toast(`AI 解析完成（${result.source}）`);
+});
+
+function renderAiSettings() {
+  const config = state.aiConfig || {};
+  $("#aiProvider").value = config.provider || "deepseek";
+  $("#aiBaseUrl").value = config.baseUrl || "";
+  $("#aiModel").value = config.model || "";
+  $("#aiKey").value = config.apiKey || "";
+  const status = $("#aiStatus");
+  if (status) {
+    const note = AI_PROVIDER_NOTES[config.provider];
+    status.textContent = config.apiKey
+      ? `已配置：${config.provider || "自定义"}${config.model ? " · " + config.model : ""}${note ? "。注意：" + note : ""}`
+      : `未配置。填入 API Key 保存后，导入/解析歌曲时会自动用 AI 解析。${note ? "注意：" + note : ""}`;
+  }
+}
+
+$("#aiProvider").addEventListener("change", () => {
+  const provider = $("#aiProvider").value;
+  const preset = AI_PRESETS[provider];
+  if (preset && provider !== "custom") {
+    $("#aiBaseUrl").value = preset.baseUrl;
+    $("#aiModel").value = preset.model;
+  }
+});
+
+$("#saveAiConfig").addEventListener("click", () => {
+  const provider = $("#aiProvider").value;
+  const apiKey = $("#aiKey").value.trim();
+  const status = $("#aiStatus");
+  if (!apiKey) {
+    status.textContent = "请填写 API Key";
+    return;
+  }
+  const preset = AI_PRESETS[provider] || {};
+  state.aiConfig = {
+    provider,
+    apiKey,
+    baseUrl: $("#aiBaseUrl").value.trim() || preset.baseUrl || "",
+    model: $("#aiModel").value.trim() || preset.model || ""
+  };
+  saveState();
+  status.textContent = "配置已保存";
+  toast("AI 配置已保存");
+});
+
+$("#testAiConfig").addEventListener("click", async () => {
+  const status = $("#aiStatus");
+  const apiKey = $("#aiKey").value.trim();
+  if (!apiKey) {
+    status.textContent = "请先填写 API Key";
+    return;
+  }
+  const provider = $("#aiProvider").value;
+  const preset = AI_PRESETS[provider] || {};
+  const config = {
+    apiKey,
+    baseUrl: ($("#aiBaseUrl").value.trim() || preset.baseUrl || "").replace(/\/+$/, ""),
+    model: $("#aiModel").value.trim() || preset.model || ""
+  };
+  if (!config.baseUrl || !config.model) {
+    status.textContent = "缺少 API 地址或模型名";
+    return;
+  }
+  status.textContent = "正在测试连接…";
+  try {
+    const content = await callChatCompletions(config, [{ role: "user", content: "只回复两个字：连接成功" }], 30000);
+    status.textContent = `连接成功：${content}`;
+    toast("AI 连接成功");
+  } catch (error) {
+    status.textContent = `连接失败：${error.message}`;
+    toast("AI 连接失败");
+  }
+});
+
+$("#clearAiConfig").addEventListener("click", () => {
+  delete state.aiConfig;
+  saveState();
+  renderAiSettings();
+  toast("AI 配置已清除");
+});
+
 $("#songSearchInput").addEventListener("keydown", event => {
   if (event.key === "Enter") searchSongs();
 });
