@@ -617,6 +617,175 @@ const GRAMMAR_POINTS = [
       { ja: "早く起きなければ。", romaji: "Hayaku okinakereba.", zh: "不早起不行。" },
       { ja: "行かなければならない。", romaji: "Ikanakereba naranai.", zh: "非去不可。" }
     ]
+  },
+  {
+    id: "jisho-form",
+    pattern: "动词辞书形",
+    title: "动词原形（词典形）",
+    level: "N5",
+    song: "歌词常见",
+    songId: null,
+    explain: "辞书形就是动词在词典里的原形（如 行く、食べる、する），是后面所有形态变化的起点。歌词里常以原形作句尾（歌体）或修饰名词。",
+    examples: [
+      { ja: "毎日走る。", romaji: "Mainichi hashiru.", zh: "每天都跑。" },
+      { ja: "食べる前に手を洗う。", romaji: "Taberu mae ni te o arau.", zh: "吃之前洗手。" }
+    ]
+  },
+  {
+    id: "masu-form",
+    pattern: "动词ます形",
+    title: "ます形（礼貌）",
+    level: "N5",
+    song: "歌词常见",
+    songId: null,
+    explain: "辞书形变ます形（行く→行きます、食べる→食べます、する→します）是礼貌体。ます形还是构成 ません/ましょう/たい/ながら 等的基础。",
+    examples: [
+      { ja: "駅まで歩きます。", romaji: "Eki made arukimasu.", zh: "走到车站。" },
+      { ja: "毎朝コーヒーを飲みます。", romaji: "Maiasa kouhii o nomimasu.", zh: "每天早上喝咖啡。" }
+    ]
+  },
+  {
+    id: "te-form",
+    pattern: "动词て形",
+    title: "て形（连接与请求）",
+    level: "N5",
+    song: "歌词常见",
+    songId: null,
+    explain: "て形用来连接动词（やってみる）、请求（〜てください）、表示进行（〜ている）等。五段动词变形有规律：買う→買って、書く→書いて、飲む→飲んで、待つ→待って、死ぬ→死んで、遊ぶ→遊んで。",
+    examples: [
+      { ja: "音楽を聞いて踊る。", romaji: "Ongaku o kiite odoru.", zh: "听着音乐跳舞。" },
+      { ja: "窓を開けてください。", romaji: "Mado o akete kudasai.", zh: "请打开窗户。" }
+    ]
+  },
+  {
+    id: "ta-form",
+    pattern: "动词た形",
+    title: "た形（过去式）",
+    level: "N5",
+    song: "歌词常见",
+    songId: null,
+    explain: "た形表示过去或完成（行く→行った、食べる→食べた）。变形规则与て形相同（て→た），还可构成 〜たら、〜たことがある。",
+    examples: [
+      { ja: "昨日映画を見た。", romaji: "Kinou eiga o mita.", zh: "昨天看了电影。" },
+      { ja: "彼に会ったことがある。", romaji: "Kare ni atta koto ga aru.", zh: "见过他。" }
+    ]
+  },
+  {
+    id: "nai-form",
+    pattern: "动词ない形",
+    title: "ない形（否定）",
+    level: "N5",
+    song: "歌词常见",
+    songId: null,
+    explain: "ない形表示否定（行く→行かない、食べる→食べない、する→しない）。也是 〜ないで、〜ずに、なければ 等的基础。",
+    examples: [
+      { ja: "今日は行かない。", romaji: "Kyou wa ikanai.", zh: "今天不去。" },
+      { ja: "コーヒーは飲まない。", romaji: "Kouhii wa nomanai.", zh: "不喝咖啡。" }
+    ]
+  },
+  {
+    id: "kanou-form",
+    pattern: "可能形（〜られる / 〜える）",
+    title: "可能形：能…",
+    level: "N4",
+    song: "歌词常见",
+    songId: null,
+    explain: "可能形表示“能、会”：一段动词 食べる→食べられる，五段动词 行く→行ける、書く→書ける。注意 られる 也可能是被动形，需按句意判断。",
+    examples: [
+      { ja: "日本語が話せる。", romaji: "Nihongo ga hanaseru.", zh: "会说日语。" },
+      { ja: "この店で買える。", romaji: "Kono mise de kaeru.", zh: "这家店能买到。" }
+    ]
+  },
+  {
+    id: "ishi-form",
+    pattern: "意志形（〜よう / 〜おう）",
+    title: "意志形：…吧",
+    level: "N4",
+    song: "歌词常见",
+    songId: null,
+    explain: "意志形表示“做…吧”的决心或提议：行く→行こう、食べる→食べよう、する→しよう。口语里也常用来表达愿望。",
+    examples: [
+      { ja: "さあ、行こう。", romaji: "Saa, ikou.", zh: "走吧。" },
+      { ja: "一緒に頑張ろう。", romaji: "Issho ni ganbarou.", zh: "一起加油吧。" }
+    ]
+  },
+  {
+    id: "meirei-form",
+    pattern: "命令形（〜しろ / 〜なさい）",
+    title: "命令形",
+    level: "N4",
+    song: "歌词常见",
+    songId: null,
+    explain: "命令形是强硬的命令语气：する→しろ、食べる→食べろ、行く→行け。动漫和歌词里常出现，但现实对话中不要对陌生人使用。",
+    examples: [
+      { ja: "早くしろ！", romaji: "Hayaku shiro!", zh: "快点做！" },
+      { ja: "ちゃんと食べなさい。", romaji: "Chanto tabenasai.", zh: "好好吃饭。" }
+    ]
+  },
+  {
+    id: "kinshi-form",
+    pattern: "禁止形（〜な）",
+    title: "禁止形：不要…",
+    level: "N4",
+    song: "歌词常见",
+    songId: null,
+    explain: "动词辞书形 + な 表示“不要…”，语气直率：行くな＝不要去。歌词和动漫中表达强烈情感时常用。",
+    examples: [
+      { ja: "来るな！", romaji: "Kuru na!", zh: "别过来！" },
+      { ja: "泣くな。", romaji: "Naku na.", zh: "别哭。" }
+    ]
+  },
+  {
+    id: "ba-form",
+    pattern: "ば形（〜ば / 〜ければ）",
+    title: "假定形：如果…",
+    level: "N4",
+    song: "歌词常见",
+    songId: null,
+    explain: "ば形表示假设条件“如果…就…”：行く→行けば、食べる→食べれば、ない→なければ。多用于客观条件。",
+    examples: [
+      { ja: "安ければ買う。", romaji: "Yasukereba kau.", zh: "便宜的话就买。" },
+      { ja: "行けば分かる。", romaji: "Ikeba wakaru.", zh: "去了就明白。" }
+    ]
+  },
+  {
+    id: "ukemi-form",
+    pattern: "受身形（〜られる）",
+    title: "被动：被…",
+    level: "N4",
+    song: "歌词常见",
+    songId: null,
+    explain: "受身形表示“被…”：食べる→食べられる、行く→行かれる、する→される。与可能形同形（られる），靠句意区分；歌词中常用被动表达无奈、感动。",
+    examples: [
+      { ja: "犬に噛まれた。", romaji: "Inu ni kamareta.", zh: "被狗咬了。" },
+      { ja: "彼女に褒められた。", romaji: "Kanojo ni homerareta.", zh: "被她表扬了。" }
+    ]
+  },
+  {
+    id: "shieki-form",
+    pattern: "使役形（〜させる）",
+    title: "使役：让…做",
+    level: "N4",
+    song: "歌词常见",
+    songId: null,
+    explain: "使役形表示“让/叫某人做…”：食べる→食べさせる、行く→行かせる、する→させる。动漫台词里很常见。",
+    examples: [
+      { ja: "子どもに野菜を食べさせる。", romaji: "Kodomo ni yasai o tabesaseru.", zh: "让孩子吃蔬菜。" },
+      { ja: "彼を行かせた。", romaji: "Kare o ikaseta.", zh: "让他去了。" }
+    ]
+  },
+  {
+    id: "shieki-ukemi-form",
+    pattern: "使役受身（〜させられる）",
+    title: "被迫…",
+    level: "N3",
+    song: "歌词常见",
+    songId: null,
+    explain: "使役形再接被动（させる＋られる→させられる），表示“被迫、不由得做…”：行かされる＝被迫去、泣かされる＝不由得落泪。歌词里表达身不由己时常用。",
+    examples: [
+      { ja: "毎日残業させられる。", romaji: "Mainichi zangyou saserareru.", zh: "每天被迫加班。" },
+      { ja: "その歌を聞いて泣かされた。", romaji: "Sono uta o kiite nakasareta.", zh: "听到那首歌不由得流泪了。" }
+    ]
   }
 ];
 
@@ -1109,6 +1278,7 @@ let lastSyncedTracks = [];
 let editingCustomId = null;
 let lastSearchResults = [];
 let utatenFetching = false;
+let editKanaMode = false;
 let utatenBlocked = false;
 let busyCount = 0;
 let busyWatchdog = null;
@@ -1454,6 +1624,7 @@ function renderSongLesson() {
         <button class="ghost-btn" data-line-step="-1" id="prevLine">上一句</button>
         <span id="lineCounter">1 / ${lines.length || 1}</span>
         <button class="ghost-btn" data-line-step="1" id="nextLine">下一句</button>
+        <button class="ghost-btn" id="editKanaMode">✎ 修正读音</button>
       </div>
       <div class="lyric-stage">
         <blockquote id="activeLineJa">${activeSong.lyric}</blockquote>
@@ -1466,21 +1637,7 @@ function renderSongLesson() {
       </div>
     </div>
     <div class="lesson-grid">
-      <div class="lesson-box">
-        <h5>单词${activeSong.vocab && activeSong.vocab.length ? `（${activeSong.vocab.filter(v => v.verified !== false).length}/${activeSong.vocab.length} 已确认读音）` : ""}</h5>
-        ${activeSong.vocab && activeSong.vocab.length ? activeSong.vocab.map(v => {
-          const romaji = wordRomaji(v);
-          return `
-          <div class="vocab-row">
-            <strong>${escapeHtml(v.ja)}</strong>
-            <span>${escapeHtml(v.kana || "…")}${romaji ? " " + romaji : ""}${v.verified === false ? " ?" : ""}</span>
-            <span>${escapeHtml(v.zh)}</span>
-            ${activeSong.isCustom ? `<button class="kana-edit-btn" data-edit-kana="${escapeHtml(v.ja)}" title="手动修正假名">✎</button>` : ""}
-          </div>
-        `;
-        }).join("") : `<p>暂无自动词卡，歌词里的重点词会在你补充学习笔记后逐步积累。</p>`}
-      </div>
-      <div class="lesson-box">
+      <div class="lesson-box lesson-box-full">
         <h5>语法讲解与例句</h5>
         ${grammarPoints.length ? grammarPoints.map(point => `
           <div class="mini-grammar">
@@ -1558,9 +1715,12 @@ function renderActiveLyricLine() {
   $("#lineBadge").innerHTML = badge;
   const chips = (line.words || []).filter(word => !FUNCTION_WORDS.has(word.surface)).map(word => {
     const romaji = wordRomaji(word);
+    const attr = editKanaMode
+      ? `data-edit-kana="${escapeHtml(word.surface)}" title="点击修正「${escapeHtml(word.surface)}」的假名"`
+      : `data-speak="${(word.kana || word.surface).replace(/"/g, "")}" title="${word.verified === false ? "读音未经确认" : ""}"`;
     return `
-    <button class="word-chip ${word.verified === false ? "uncertain" : ""}" data-speak="${(word.kana || word.surface).replace(/"/g, "")}" title="${word.verified === false ? "读音未经确认：可点单词卡上的 ✎ 手动修正，或用下方校对面板粘贴带注音的歌词" : ""}">
-      <strong>${escapeHtml(word.surface)}</strong>
+    <button class="word-chip ${word.verified === false ? "uncertain" : ""} ${editKanaMode ? "edit-mode" : ""}" ${attr}>
+      <strong>${escapeHtml(word.surface)}${editKanaMode ? " ✎" : ""}</strong>
       <small>${word.kana || "…"}${romaji ? " " + romaji : ""}${word.verified === false ? " ?" : ""}</small>
       <small>${(word.zh && word.zh !== "未收录") ? escapeHtml(word.zh) : "…"}</small>
     </button>
@@ -2265,7 +2425,17 @@ function detectGrammarIds(text) {
     ["zuni", /ずに/],
     ["tara", /たら/],
     ["teii", /てもいい|てよい/],
-    ["nakereba", /なければ|なきゃ/]
+    ["nakereba", /なければ|なきゃ/],
+    ["masu-form", /ます/],
+    ["nai-form", /ない/],
+    ["kanou-form", /られる/],
+    ["ukemi-form", /られる|られた/],
+    ["shieki-ukemi-form", /させられる/],
+    ["shieki-form", /させる|させて/],
+    ["meirei-form", /しろ|なさい/],
+    ["kinshi-form", /[くぐすつぬぶむるう]な$/],
+    ["ishi-form", /しよう|行こう|食べよう|見よう|帰ろう|言おう|やろう|歌おう|頑張ろう|作ろう|買おう|歩こう|走ろう/],
+    ["ba-form", /ければ|ばいい/]
   ];
   return detectors.filter(([, pattern]) => pattern.test(text || "")).map(([id]) => id);
 }
@@ -3589,11 +3759,25 @@ document.addEventListener("click", event => {
     return;
   }
 
+  const editKanaModeButton = event.target.closest("#editKanaMode");
+  if (editKanaModeButton) {
+    editKanaMode = !editKanaMode;
+    editKanaModeButton.classList.toggle("active", editKanaMode);
+    editKanaModeButton.textContent = editKanaMode ? "✎ 修正读音（点击单词改假名）" : "✎ 修正读音";
+    renderActiveLyricLine();
+    toast(editKanaMode ? "修正模式：点击单词修改假名" : "已退出修正模式");
+    return;
+  }
+
   const editKanaButton = event.target.closest("[data-edit-kana]");
   if (editKanaButton) {
     const surface = editKanaButton.dataset.editKana;
-    const current = (activeSong.vocab || []).find(entry => entry.ja === surface);
-    const currentKana = current && current.kana ? current.kana : "";
+    let currentWord = null;
+    activeSong.lines.forEach(line => {
+      if (currentWord) return;
+      currentWord = (line.words || []).find(word => word.surface === surface);
+    });
+    const currentKana = currentWord && currentWord.kana ? currentWord.kana : "";
     const corrected = window.prompt(`修正「${surface}」的假名：`, currentKana);
     if (corrected === null) return;
     const kana = corrected.trim().replace(/[\u3400-\u9fff\s]/g, "");
@@ -3601,6 +3785,7 @@ document.addEventListener("click", event => {
       toast("假名不能为空");
       return;
     }
+    const zh = currentWord ? currentWord.zh : "";
     activeSong.lines.forEach(line => {
       (line.words || []).forEach(word => {
         if (word.surface === surface) {
@@ -3617,7 +3802,7 @@ document.addEventListener("click", event => {
         entry.source = "manual";
       }
     });
-    cacheWord(surface, { ja: surface, kana, zh: current ? current.zh : "", source: "manual", verified: true });
+    cacheWord(surface, { ja: surface, kana, zh, source: "manual", verified: true });
     activeSong.lines.forEach(line => {
       if (line.romajiFrom !== "proofread") line.romaji = buildLineRomaji(line);
     });

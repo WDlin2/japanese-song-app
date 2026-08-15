@@ -1175,24 +1175,6 @@ button.word-chip:hover {
   color: var(--muted);
 }
 
-.kana-edit-btn {
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  background: var(--panel);
-  color: var(--teal);
-  font-size: 13px;
-  line-height: 1;
-  cursor: pointer;
-  transition: background 0.15s ease;
-}
-
-.kana-edit-btn:hover {
-  background: var(--teal-soft);
-}
-
 .badge-row {
   display: flex;
   gap: 6px;
@@ -2091,7 +2073,20 @@ button.word-chip:hover {
   .anime-grid,
   .word-grid,
   .grammar-grid,
-  .lesson-grid {
+.lesson-box-full {
+  grid-column: 1 / -1;
+}
+
+.word-chip.edit-mode {
+  border-color: var(--teal);
+  border-style: dashed;
+}
+
+.word-chip.edit-mode strong {
+  color: var(--teal);
+}
+
+.lesson-grid {
     grid-template-columns: 1fr;
   }
 
