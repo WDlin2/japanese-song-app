@@ -1468,14 +1468,17 @@ function renderSongLesson() {
     <div class="lesson-grid">
       <div class="lesson-box">
         <h5>单词${activeSong.vocab && activeSong.vocab.length ? `（${activeSong.vocab.filter(v => v.verified !== false).length}/${activeSong.vocab.length} 已确认读音）` : ""}</h5>
-        ${activeSong.vocab && activeSong.vocab.length ? activeSong.vocab.map(v => `
+        ${activeSong.vocab && activeSong.vocab.length ? activeSong.vocab.map(v => {
+          const romaji = wordRomaji(v);
+          return `
           <div class="vocab-row">
             <strong>${escapeHtml(v.ja)}</strong>
-            <span>${escapeHtml(v.kana || "…")}${v.verified === false ? " ?" : ""}</span>
+            <span>${escapeHtml(v.kana || "…")}${romaji ? " " + romaji : ""}${v.verified === false ? " ?" : ""}</span>
             <span>${escapeHtml(v.zh)}</span>
             ${activeSong.isCustom ? `<button class="kana-edit-btn" data-edit-kana="${escapeHtml(v.ja)}" title="手动修正假名">✎</button>` : ""}
           </div>
-        `).join("") : `<p>暂无自动词卡，歌词里的重点词会在你补充学习笔记后逐步积累。</p>`}
+        `;
+        }).join("") : `<p>暂无自动词卡，歌词里的重点词会在你补充学习笔记后逐步积累。</p>`}
       </div>
       <div class="lesson-box">
         <h5>语法讲解与例句</h5>
@@ -1553,12 +1556,16 @@ function renderActiveLyricLine() {
           ? `<span class="verify-badge warn">读音未校对</span>`
           : "")));
   $("#lineBadge").innerHTML = badge;
-  const chips = (line.words || []).filter(word => !FUNCTION_WORDS.has(word.surface)).map(word => `
+  const chips = (line.words || []).filter(word => !FUNCTION_WORDS.has(word.surface)).map(word => {
+    const romaji = wordRomaji(word);
+    return `
     <button class="word-chip ${word.verified === false ? "uncertain" : ""}" data-speak="${(word.kana || word.surface).replace(/"/g, "")}" title="${word.verified === false ? "读音未经确认：可点单词卡上的 ✎ 手动修正，或用下方校对面板粘贴带注音的歌词" : ""}">
       <strong>${escapeHtml(word.surface)}</strong>
-      <small>${word.kana || "…"}${word.verified === false ? " ?" : ""} · ${(word.zh && word.zh !== "未收录") ? escapeHtml(word.zh) : "…"}</small>
+      <small>${word.kana || "…"}${romaji ? " " + romaji : ""}${word.verified === false ? " ?" : ""}</small>
+      <small>${(word.zh && word.zh !== "未收录") ? escapeHtml(word.zh) : "…"}</small>
     </button>
-  `).join("");
+  `;
+  }).join("");
   $("#activeLineWords").innerHTML = chips || `<span class="word-chip"><strong>${line.ja}</strong><small>点右上角播放听原句</small></span>`;
   const lineGrammar = [
     ...detectGrammarIds(line.ja)
@@ -2210,7 +2217,7 @@ async function lookupJishoWord(token) {
     return {
       ja: token,
       kana: (first.reading && first.reading.kana) || "",
-      zh: (first.senses && first.senses[0] && first.senses[0].glosses || []).slice(0, 2).join(" / ")
+      zh: ""
     };
   } catch (error) {
     return null;
@@ -2752,12 +2759,19 @@ function parseAiLyricResponse(content) {
   return JSON.parse(text.slice(start, end + 1));
 }
 
-function buildAiLyricPrompt(batch) {
+function buildAiLyricPrompt(batch, context) {
   const lines = batch.map((line, index) => `[${index}] ${line.ja}`).join("\n");
+  const songInfo = (context && context.title)
+    ? `歌曲：《${context.title}》${context.artist ? ` - ${context.artist}` : ""}。请记住这首歌，遇到特殊读音（如 群青→ぐんじょう）优先采用该曲的正确读音。\n`
+    : "";
+  const reference = (context && context.reference && context.reference.length)
+    ? `以下是该歌词在 utaten 歌词网站的官方注音（格式：漢字(假名)），请严格参考并采用其中的读音：\n${context.reference.join("\n")}\n`
+    : "";
   return [
     {
       role: "system",
-      content: "你是日语歌词学习助手。用户会给出若干行日语歌词，每行以 [序号] 开头。请对每一行输出：\n" +
+      content: songInfo +
+        "你是日语歌词学习助手。用户会给出若干行日语歌词，每行以 [序号] 开头。请对每一行输出：\n" +
         "1. zh：中文翻译（自然通顺）\n" +
         "2. romaji：整句罗马音（只允许 a-z 字母和空格，按单词分隔；绝不允许出现汉字或假名）\n" +
         "3. words：逐词拆解数组，元素为 {surface: 原词, kana: 读音假名, zh: 中文意思}。硬性要求：\n" +
@@ -2799,6 +2813,16 @@ function findFallbackKana(enrichedWords, surface) {
     }
   }
   return null;
+}
+
+function rebuildLineRomajiFromWords(line) {
+  const nonFunction = (line.words || []).filter(word => !FUNCTION_WORDS.has(word.surface));
+  if (!nonFunction.length || !nonFunction.every(word => word.kana)) return null;
+  return (line.words || []).map(word => kanaToRomaji(word.kana || "")).filter(Boolean).join(" ");
+}
+
+function wordRomaji(word) {
+  return word.kana ? kanaToRomaji(word.kana) : "";
 }
 
 function applyAiLineToSongLine(songLine, aiLine) {
@@ -2853,11 +2877,42 @@ function applyAiLineToSongLine(songLine, aiLine) {
   return applied;
 }
 
+async function fetchUtaTenReferenceLines(song) {
+  if (song.utatenReference && song.utatenReference.length) return song.utatenReference;
+  if (!song || !song.title) return [];
+  try {
+    const searchUrl = `https://utaten.com/search?title=${encodeURIComponent(song.title)}&artist_name=${encodeURIComponent(song.artist || "")}`;
+    const searchHtml = await fetchHtmlViaChain(searchUrl);
+    const results = extractUtaTenResults(searchHtml);
+    const best = results.length ? pickBestUtaTenResult(results, song) : null;
+    if (!best) return [];
+    const lyricHtml = await fetchHtmlViaChain(`https://utaten.com/lyric/${best.id}/`);
+    const parsed = extractUtaTenLyric(lyricHtml);
+    song.utatenReference = parsed.furiganaLines.slice(0, 60);
+    saveState();
+    return song.utatenReference;
+  } catch (error) {
+    return [];
+  }
+}
+
 async function enrichSongWithAI(song, options = {}) {
   const config = getAiConfig();
   if (!config) return { error: "未配置 AI，请先到导入页设置 API Key" };
   if (!song || !song.lines || !song.lines.length) return { error: "这首歌还没有歌词" };
   const setStatus = options.onStatus || (() => {});
+  const context = {
+    title: song.title,
+    artist: song.artist,
+    reference: song.utatenReference || []
+  };
+  if (!context.reference.length) {
+    setStatus("正在联网获取官方注音参考…");
+    context.reference = await Promise.race([
+      fetchUtaTenReferenceLines(song),
+      new Promise(resolve => window.setTimeout(() => resolve([]), 12000))
+    ]);
+  }
   const batchSize = 1;
   const batches = [];
   for (let i = 0; i < song.lines.length; i += batchSize) {
@@ -2885,7 +2940,7 @@ async function enrichSongWithAI(song, options = {}) {
         let content = null;
         for (let attempt = 0; attempt < 2; attempt += 1) {
           try {
-            content = await callChatCompletions(config, buildAiLyricPrompt(batch), 60000);
+            content = await callChatCompletions(config, buildAiLyricPrompt(batch, context), 60000);
             break;
           } catch (error) {
             if (attempt === 0) {
@@ -2915,7 +2970,11 @@ async function enrichSongWithAI(song, options = {}) {
             wordsApplied += applied;
             linesOk += 1;
             const line = song.lines[lineIndex];
-            if (!line.romaji && line.words && line.words.length) {
+            const rebuilt = rebuildLineRomajiFromWords(line);
+            if (rebuilt) {
+              line.romaji = rebuilt;
+              line.romajiFrom = "ai";
+            } else if (!line.romaji && line.words && line.words.length) {
               const romaji = buildLineRomaji(line);
               if (romaji) {
                 line.romaji = romaji;
@@ -2930,7 +2989,11 @@ async function enrichSongWithAI(song, options = {}) {
     }
     await Promise.all(Array.from({ length: 2 }, worker));
     song.lines.forEach(line => {
-      if (!line.romaji && line.words && line.words.length) {
+      const rebuilt = rebuildLineRomajiFromWords(line);
+      if (rebuilt) {
+        line.romaji = rebuilt;
+        if (!line.romajiFrom) line.romajiFrom = "auto";
+      } else if (!line.romaji && line.words && line.words.length) {
         const romaji = buildLineRomaji(line);
         if (romaji) {
           line.romaji = romaji;
@@ -2979,12 +3042,20 @@ async function runAIAfterEnrich(song, setStatus) {
   }
 }
 
-function buildAiReadingPrompt(batch) {
+function buildAiReadingPrompt(batch, context) {
   const lines = batch.map((line, index) => `[${index}] ${line.ja}`).join("\n");
+  const songInfo = (context && context.title)
+    ? `歌曲：《${context.title}》${context.artist ? ` - ${context.artist}` : ""}。请记住这首歌，遇到特殊读音（如 群青→ぐんじょう）优先采用该曲的正确读音。\n`
+    : "";
+  const reference = (context && context.reference && context.reference.length)
+    ? `以下是该歌词在 utaten 歌词网站的官方注音（格式：漢字(假名)），请严格参考并采用其中的读音：\n${context.reference.join("\n")}\n`
+    : "";
   return [
     {
       role: "system",
-      content: "你是日语读音校对助手。用户会给出若干行日语歌词，每行以 [序号] 开头。请为每行的每个词给出读音假名。\n" +
+      content: songInfo +
+        reference +
+        "你是日语读音校对助手。用户会给出若干行日语歌词，每行以 [序号] 开头。请为每行的每个词给出读音假名。\n" +
         "硬性要求：\n" +
         "1. kana 必须是纯平假名（ひらがな），绝不允许出现汉字或罗马音；读不出就留空字符串\n" +
         "2. 按语境读音（如 今日→きょう、一人→ひとり、分かった→わかった、空→そら、日々→ひび、大人→おとな）\n" +
@@ -3011,10 +3082,16 @@ function applyAiReadingsToLine(songLine, aiLine) {
     }
   });
   if (applied && songLine.romajiFrom !== "ai" && songLine.romajiFrom !== "proofread" && songLine.romajiFrom !== "utaten") {
-    const romaji = buildLineRomaji(songLine);
-    if (romaji) {
-      songLine.romaji = romaji;
+    const rebuilt = rebuildLineRomajiFromWords(songLine);
+    if (rebuilt) {
+      songLine.romaji = rebuilt;
       if (!songLine.romajiFrom) songLine.romajiFrom = "auto";
+    } else {
+      const romaji = buildLineRomaji(songLine);
+      if (romaji) {
+        songLine.romaji = romaji;
+        if (!songLine.romajiFrom) songLine.romajiFrom = "auto";
+      }
     }
   }
   return applied;
@@ -3025,6 +3102,17 @@ async function aiProofreadReadings(song, options = {}) {
   if (!config) return { error: "未配置 AI，请先到导入页设置 API Key" };
   if (!song || !song.lines || !song.lines.length) return { error: "这首歌还没有歌词" };
   const setStatus = options.onStatus || (() => {});
+  const context = {
+    title: song.title,
+    artist: song.artist,
+    reference: song.utatenReference || []
+  };
+  if (!context.reference.length) {
+    context.reference = await Promise.race([
+      fetchUtaTenReferenceLines(song),
+      new Promise(resolve => window.setTimeout(() => resolve([]), 12000))
+    ]);
+  }
   const pending = [];
   song.lines.forEach((line, index) => {
     const hasUnverified = (line.words || []).some(word => word.surface && !FUNCTION_WORDS.has(word.surface) && !word.verified);
@@ -3054,7 +3142,7 @@ async function aiProofreadReadings(song, options = {}) {
         let content = null;
         for (let attempt = 0; attempt < 2; attempt += 1) {
           try {
-            content = await callChatCompletions(config, buildAiReadingPrompt(batch), 60000);
+            content = await callChatCompletions(config, buildAiReadingPrompt(batch, context), 60000);
             break;
           } catch (error) {
             if (attempt === 0) setStatus(`AI 第 ${batchIndex + 1} 句重试中…`);
