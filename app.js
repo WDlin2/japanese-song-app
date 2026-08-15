@@ -434,6 +434,409 @@ const GRAMMAR_POINTS = [
       { ja: "日本食を食べたいです。", romaji: "Nihonshoku o tabetai desu.", zh: "我想吃日本料理。" },
       { ja: "もう一度会いたい。", romaji: "Mou ichido aitai.", zh: "还想再见一次。" }
     ]
+  },
+  {
+    id: "kudasai",
+    pattern: "〜てください",
+    title: "请（做）…",
+    level: "N5",
+    song: "歌词常见",
+    songId: "lemon",
+    explain: "动词て形 + ください，表示礼貌地请求对方“请做…”。歌词和旅行中都高频出现。",
+    examples: [
+      { ja: "ちょっと待ってください。", romaji: "Chotto matte kudasai.", zh: "请稍等。" },
+      { ja: "ここに座ってください。", romaji: "Koko ni suwatte kudasai.", zh: "请坐在这里。" }
+    ]
+  },
+  {
+    id: "teimasu",
+    pattern: "〜ています",
+    title: "正在… / 一直…",
+    level: "N5",
+    song: "歌词常见",
+    songId: "lemon",
+    explain: "动词て形 + います 表示动作正在进行，或某种状态持续到现在。",
+    examples: [
+      { ja: "今、音楽を聴いています。", romaji: "Ima, ongaku o kiite imasu.", zh: "我正在听音乐。" },
+      { ja: "ずっと待っています。", romaji: "Zutto matte imasu.", zh: "一直在等。" }
+    ]
+  },
+  {
+    id: "masenka",
+    pattern: "〜ませんか",
+    title: "要不要…？",
+    level: "N5",
+    song: "歌词常见",
+    songId: "lemon",
+    explain: "动词ます形 + ませんか，是日语里自然的“邀请/提议”方式，比ましょう更口语。",
+    examples: [
+      { ja: "一緒に帰りませんか。", romaji: "Issho ni kaerimasen ka.", zh: "要不要一起回去？" },
+      { ja: "コーヒーを飲みませんか。", romaji: "Kouhii o nomimasen ka.", zh: "要不要喝杯咖啡？" }
+    ]
+  },
+  {
+    id: "mashou",
+    pattern: "〜ましょう",
+    title: "一起…吧",
+    level: "N5",
+    song: "歌词常见",
+    songId: "lemon",
+    explain: "动词ます形 + ましょう，表示“我们…吧”，用于提议一起做某事，语气积极。",
+    examples: [
+      { ja: "さあ、行きましょう。", romaji: "Saa, ikimashou.", zh: "好，走吧。" },
+      { ja: "明日もう一度考えましょう。", romaji: "Ashita mou ichido kangaemashou.", zh: "明天再想一次吧。" }
+    ]
+  },
+  {
+    id: "kara",
+    pattern: "〜から",
+    title: "因为… / 从…",
+    level: "N5",
+    song: "歌词常见",
+    songId: "lemon",
+    explain: "から 有两个常用意思：接在句尾表示“因为、所以”，接在名词后表示起点“从…”。歌词里两种都很常见。",
+    examples: [
+      { ja: "疲れたから、休みます。", romaji: "Tsukareta kara, yasumimasu.", zh: "因为累了，所以要休息。" },
+      { ja: "東京から来ました。", romaji: "Toukyou kara kimashita.", zh: "我从东京来。" }
+    ]
+  },
+  {
+    id: "made",
+    pattern: "〜まで",
+    title: "到…为止",
+    level: "N5",
+    song: "歌词常见",
+    songId: "lemon",
+    explain: "まで 表示时间或地点的终点，“到…为止”，常和 から 搭配成“从…到…”。",
+    examples: [
+      { ja: "駅まで歩きましょう。", romaji: "Eki made arukimashou.", zh: "走到车站吧。" },
+      { ja: "7時まで待ちます。", romaji: "Shichiji made machimasu.", zh: "等到 7 点。" }
+    ]
+  },
+  {
+    id: "keredo",
+    pattern: "〜けど",
+    title: "虽然…但是",
+    level: "N5",
+    song: "歌词常见",
+    songId: "lemon",
+    explain: "けど（けれど）连接两个相反或转折的内容，意思是“虽然…但是…”，口语里也常用来软化和结尾。",
+    examples: [
+      { ja: "行きたいけど、時間がない。", romaji: "Ikitai kedo, jikan ga nai.", zh: "想去，但是没时间。" },
+      { ja: "高いけど、買いました。", romaji: "Takai kedo, kaimashita.", zh: "虽然贵，但还是买了。" }
+    ]
+  },
+  {
+    id: "node",
+    pattern: "〜ので",
+    title: "因为…（客观）",
+    level: "N4",
+    song: "歌词常见",
+    songId: "lemon",
+    explain: "ので 也表示“因为”，但语气更客观、更礼貌，常用在解释原因、说明情况时。",
+    examples: [
+      { ja: "雨が降っているので、家にいます。", romaji: "Ame ga futte iru node, ie ni imasu.", zh: "因为在下雨，所以待在家里。" },
+      { ja: "時間がないので、急ぎます。", romaji: "Jikan ga nai node, isogimasu.", zh: "因为没时间，所以要赶。" }
+    ]
+  },
+  {
+    id: "nara",
+    pattern: "〜なら",
+    title: "如果…的话",
+    level: "N5",
+    song: "歌词常见",
+    songId: "lemon",
+    explain: "なら 接在名词或句子后表示假设“如果…的话”，比 ならば 更口语，日常对话里更常用。",
+    examples: [
+      { ja: "行くなら、私も行く。", romaji: "Iku nara, watashi mo iku.", zh: "如果你去，我也去。" },
+      { ja: "安いなら、買います。", romaji: "Yasui nara, kaimasu.", zh: "如果便宜的话就买。" }
+    ]
+  },
+  {
+    id: "kamoshirenai",
+    pattern: "〜かもしれない",
+    title: "也许…",
+    level: "N4",
+    song: "歌词常见",
+    songId: "lemon",
+    explain: "かもしれない 表示不确定的推测“也许、可能”，比 でしょう 更没把握，常带不安或担忧。",
+    examples: [
+      { ja: "明日は雨かもしれない。", romaji: "Ashita wa ame kamo shirenai.", zh: "明天也许会下雨。" },
+      { ja: "彼は来ないかもしれない。", romaji: "Kare wa konai kamo shirenai.", zh: "他也许不来了。" }
+    ]
+  },
+  {
+    id: "dake",
+    pattern: "〜だけ",
+    title: "只…",
+    level: "N5",
+    song: "歌词常见",
+    songId: "lemon",
+    explain: "だけ 表示限定“只有…、只做…”，歌词里常用来表达“只为你”这类专一的情感。",
+    examples: [
+      { ja: "少しだけ話しました。", romaji: "Sukoshi dake hanashimashita.", zh: "只聊了一点点。" },
+      { ja: "君だけを見つめる。", romaji: "Kimi dake o mitsumeru.", zh: "只注视着你。" }
+    ]
+  },
+  {
+    id: "shika",
+    pattern: "〜しか（ない）",
+    title: "只（有）…",
+    level: "N4",
+    song: "歌词常见",
+    songId: "lemon",
+    explain: "しか 后面必须搭配否定，表示“只有…”，强调数量极少或别无选择。",
+    examples: [
+      { ja: "10円しかない。", romaji: "Juu en shika nai.", zh: "只有 10 日元。" },
+      { ja: "君しかいない。", romaji: "Kimi shika inai.", zh: "我只有你。" }
+    ]
+  },
+  {
+    id: "yori",
+    pattern: "〜より",
+    title: "比…",
+    level: "N5",
+    song: "歌词常见",
+    songId: "lemon",
+    explain: "より 表示比较“比…更…”，也可以接在“比自己”这类对象后强调程度。",
+    examples: [
+      { ja: "電車よりバスのほうが速い。", romaji: "Densha yori basu no hou ga hayai.", zh: "比电车，巴士更快。" },
+      { ja: "昨日より寒い。", romaji: "Kinou yori samui.", zh: "比昨天冷。" }
+    ]
+  },
+  {
+    id: "hodo",
+    pattern: "〜ほど",
+    title: "…的程度 / 越…",
+    level: "N4",
+    song: "歌词常见",
+    songId: "lemon",
+    explain: "ほど 表示程度“像…那样”或“越…越…”，歌词里 どれほど 是高频表达“多么、到什么程度”。",
+    examples: [
+      { ja: "どれほど好きか。", romaji: "Dorehodo suki ka.", zh: "有多喜欢呢。" },
+      { ja: "泣きたいほど嬉しい。", romaji: "Nakitai hodo ureshii.", zh: "高兴到想哭。" }
+    ]
+  },
+  {
+    id: "tumori",
+    pattern: "〜つもり",
+    title: "打算…",
+    level: "N5",
+    song: "歌词常见",
+    songId: "lemon",
+    explain: "つもり 表示自己的打算、计划“打算…”，否定形式 つもりはない 表示“没打算…”。",
+    examples: [
+      { ja: "留学するつもりです。", romaji: "Ryuugaku suru tsumori desu.", zh: "我打算去留学。" },
+      { ja: "帰るつもりはない。", romaji: "Kaeru tsumori wa nai.", zh: "不打算回去。" }
+    ]
+  },
+  {
+    id: "darou",
+    pattern: "〜だろう / でしょう",
+    title: "大概…吧",
+    level: "N4",
+    song: "歌词常见",
+    songId: "lemon",
+    explain: "だろう（でしょう）表示推测“大概…吧”，歌词里常用来表达对未来的期待或不安。",
+    examples: [
+      { ja: "明日は晴れるだろう。", romaji: "Ashita wa hareru darou.", zh: "明天应该会晴吧。" },
+      { ja: "大丈夫でしょう。", romaji: "Daijoubu deshou.", zh: "应该没问题吧。" }
+    ]
+  },
+  {
+    id: "rashii",
+    pattern: "〜らしい",
+    title: "好像… / 据说…",
+    level: "N4",
+    song: "歌词常见",
+    songId: "lemon",
+    explain: "らしい 表示“好像、据说、看样子”，也可以接名词表示“很有…的样子”。",
+    examples: [
+      { ja: "彼は優しいらしい。", romaji: "Kare wa yasashii rashii.", zh: "他好像很温柔。" },
+      { ja: "春らしい天気だ。", romaji: "Haru rashii tenki da.", zh: "很有春天气息的好天气。" }
+    ]
+  },
+  {
+    id: "mitai",
+    pattern: "〜みたい",
+    title: "像…一样",
+    level: "N4",
+    song: "歌词常见",
+    songId: "lemon",
+    explain: "みたい 是口语里的比喻“像…一样”，比 ように 更随意，常出现在歌词和动漫台词里。",
+    examples: [
+      { ja: "夢みたいだ。", romaji: "Yume mitai da.", zh: "像做梦一样。" },
+      { ja: "子どもみたいに笑う。", romaji: "Kodomo mitai ni warau.", zh: "像孩子一样笑。" }
+    ]
+  },
+  {
+    id: "nagara",
+    pattern: "〜ながら",
+    title: "一边…一边…",
+    level: "N4",
+    song: "歌词常见",
+    songId: "lemon",
+    explain: "动词ます形去掉ます + ながら，表示两个动作同时进行，“一边…一边…”。",
+    examples: [
+      { ja: "歌いながら歩く。", romaji: "Utainagara aruku.", zh: "一边唱歌一边走。" },
+      { ja: "テレビを見ながら食べる。", romaji: "Terebi o minagara taberu.", zh: "边看电视边吃。" }
+    ]
+  },
+  {
+    id: "teageru",
+    pattern: "〜てあげる",
+    title: "为（别人）做…",
+    level: "N4",
+    song: "歌词常见",
+    songId: "lemon",
+    explain: "动词て形 + あげる，表示“（我）为别人做…”，是授受关系动词之一。",
+    examples: [
+      { ja: "手伝ってあげる。", romaji: "Tetsudatte ageru.", zh: "我来帮你。" },
+      { ja: "駅まで送ってあげる。", romaji: "Eki made okutte ageru.", zh: "我送你到车站。" }
+    ]
+  },
+  {
+    id: "temorau",
+    pattern: "〜てもらう",
+    title: "请（别人）为我做…",
+    level: "N4",
+    song: "歌词常见",
+    songId: "lemon",
+    explain: "动词て形 + もらう，表示“请别人为我做…”或“得到别人为我做的事”。",
+    examples: [
+      { ja: "先生に教えてもらう。", romaji: "Sensei ni oshiete morau.", zh: "请老师教我。" },
+      { ja: "友達に直してもらった。", romaji: "Tomodachi ni naoshite moratta.", zh: "请朋友帮我修好了。" }
+    ]
+  },
+  {
+    id: "tekureru",
+    pattern: "〜てくれる",
+    title: "（别人）为我做…",
+    level: "N4",
+    song: "歌词常见",
+    songId: "lemon",
+    explain: "动词て形 + くれる，表示“别人（为我）做…”，强调对方的好意，歌词里常用于感谢。",
+    examples: [
+      { ja: "友達が助けてくれた。", romaji: "Tomodachi ga tasukete kureta.", zh: "朋友帮了我。" },
+      { ja: "君が歌を歌ってくれる。", romaji: "Kimi ga uta o utatte kureru.", zh: "你为我唱歌。" }
+    ]
+  },
+  {
+    id: "teoku",
+    pattern: "〜ておく",
+    title: "事先做好…",
+    level: "N4",
+    song: "歌词常见",
+    songId: "lemon",
+    explain: "动词て形 + おく，表示“事先准备好…”，或做完动作后保持结果不变。",
+    examples: [
+      { ja: "予約しておきます。", romaji: "Yoyaku shite okimasu.", zh: "我事先预约好。" },
+      { ja: "メモしておく。", romaji: "Memo shite oku.", zh: "先记下来。" }
+    ]
+  },
+  {
+    id: "teshimau",
+    pattern: "〜てしまう",
+    title: "不知不觉… / 遗憾",
+    level: "N4",
+    song: "歌词常见",
+    songId: "lemon",
+    explain: "动词て形 + しまう，表示动作彻底完成，常带“不知不觉就…”或“遗憾、后悔”的语气。",
+    examples: [
+      { ja: "ケーキを全部食べてしまった。", romaji: "Keeki o zenbu tabete shimatta.", zh: "不小心把蛋糕全吃完了。" },
+      { ja: "約束を忘れてしまった。", romaji: "Yakusoku o wasurete shimatta.", zh: "不小心把约定忘了。" }
+    ]
+  },
+  {
+    id: "youninaru",
+    pattern: "〜ようになる",
+    title: "变得能…",
+    level: "N4",
+    song: "歌词常见",
+    songId: "lemon",
+    explain: "动词原形/可能形 + ようになる，表示状态的变化“变得能…、开始…”，强调渐进的过程。",
+    examples: [
+      { ja: "日本語が話せるようになった。", romaji: "Nihongo ga hanaseru you ni natta.", zh: "变得会说日语了。" },
+      { ja: "早起きするようになった。", romaji: "Hayaoki suru you ni natta.", zh: "开始早起了。" }
+    ]
+  },
+  {
+    id: "tameni",
+    pattern: "〜ために",
+    title: "为了…",
+    level: "N4",
+    song: "歌词常见",
+    songId: "lemon",
+    explain: "ために 表示目的“为了…”，也可以表示原因（书面）。歌词里常出现“为了你、为了梦想”这类句子。",
+    examples: [
+      { ja: "日本に行くために勉強する。", romaji: "Nihon ni iku tame ni benkyou suru.", zh: "为了去日本而学习。" },
+      { ja: "健康のために走る。", romaji: "Kenkou no tame ni hashiru.", zh: "为了健康而跑步。" }
+    ]
+  },
+  {
+    id: "dekiru",
+    pattern: "〜できる",
+    title: "能够…",
+    level: "N5",
+    song: "歌词常见",
+    songId: "lemon",
+    explain: "できる 表示“能够、可以、做得到”，也可以直接指“（东西）做好了、完成了”。",
+    examples: [
+      { ja: "一人でできる。", romaji: "Hitori de dekiru.", zh: "一个人就能做到。" },
+      { ja: "泳ぐことができます。", romaji: "Oyogu koto ga dekimasu.", zh: "我会游泳。" }
+    ]
+  },
+  {
+    id: "zuni",
+    pattern: "〜ずに",
+    title: "不…就…",
+    level: "N4",
+    song: "歌词常见",
+    songId: "lemon",
+    explain: "动词ない形去掉ない + ずに，表示“不…就（做另一件事）”，书面、歌词常用，语气比 なくて 轻。",
+    examples: [
+      { ja: "言わずに帰った。", romaji: "Iwazu ni kaetta.", zh: "没说就回去了。" },
+      { ja: "見ずに買った。", romaji: "Mizu ni katta.", zh: "没看就买了。" }
+    ]
+  },
+  {
+    id: "tara",
+    pattern: "〜たら",
+    title: "如果…的话（假设）",
+    level: "N5",
+    song: "歌词常见",
+    songId: "lemon",
+    explain: "动词た形 + ら 表示假设“如果…的话”，比 なら 更强调动作完成后的条件。",
+    examples: [
+      { ja: "時間があったら行く。", romaji: "Jikan ga attara iku.", zh: "有时间就去。" },
+      { ja: "終わったら知らせて。", romaji: "Owattara shirasete.", zh: "结束后告诉我。" }
+    ]
+  },
+  {
+    id: "teii",
+    pattern: "〜てもいい",
+    title: "可以…",
+    level: "N5",
+    song: "歌词常见",
+    songId: "lemon",
+    explain: "动词て形 + もいい 表示许可“可以做…”，疑问句 てもいいですか 是礼貌的请求。",
+    examples: [
+      { ja: "写真を撮ってもいいですか。", romaji: "Shashin o totte mo ii desu ka.", zh: "可以拍照吗？" },
+      { ja: "ここで休んでもいい。", romaji: "Koko de yasunde mo ii.", zh: "可以在这里休息。" }
+    ]
+  },
+  {
+    id: "nakereba",
+    pattern: "〜なければ（ならない）",
+    title: "必须… / 不…的话",
+    level: "N4",
+    song: "歌词常见",
+    songId: "lemon",
+    explain: "なければならない 表示“必须…”，なければ 单独用则表示“如果不…（就不行）”。",
+    examples: [
+      { ja: "早く起きなければ。", romaji: "Hayaku okinakereba.", zh: "不早起不行。" },
+      { ja: "行かなければならない。", romaji: "Ikanakereba naranai.", zh: "非去不可。" }
+    ]
   }
 ];
 
@@ -586,6 +989,270 @@ const WORDS = [
   { ja: "見る", kana: "みる", romaji: "miru", zh: "看", cat: "基础", example: "写真を見てもいいですか。" },
   { ja: "食べる", kana: "たべる", romaji: "taberu", zh: "吃", cat: "餐饮", example: "日本食を食べたいです。" }
 ];
+
+const FUNCTION_WORDS = new Set([
+  "を", "は", "が", "に", "で", "と", "も", "の", "へ", "や", "か", "よ", "ね", "な",
+  "わ", "ぞ", "ぜ", "し", "って", "ん", "だ", "です", "ます", "けど", "けれど",
+  "そして", "それで", "だから", "でも", "まで", "から", "だけ", "より", "ほど",
+  "ば", "たら", "なら", "に", "の", "が", "で", "も", "と", "を", "は", "へ"
+]);
+
+const COMMON_GLOSS = {
+  "私": { kana: "わたし", zh: "我" },
+  "僕": { kana: "ぼく", zh: "我（男性）" },
+  "俺": { kana: "おれ", zh: "我（男性·随意）" },
+  "君": { kana: "きみ", zh: "你" },
+  "あなた": { kana: "あなた", zh: "你" },
+  "彼": { kana: "かれ", zh: "他" },
+  "彼女": { kana: "かのじょ", zh: "她 / 女朋友" },
+  "世界": { kana: "せかい", zh: "世界" },
+  "心": { kana: "こころ", zh: "心" },
+  "夢": { kana: "ゆめ", zh: "梦" },
+  "愛": { kana: "あい", zh: "爱" },
+  "光": { kana: "ひかり", zh: "光" },
+  "夜": { kana: "よる", zh: "夜晚" },
+  "空": { kana: "そら", zh: "天空" },
+  "星": { kana: "ほし", zh: "星星" },
+  "月": { kana: "つき", zh: "月亮 / 月份" },
+  "海": { kana: "うみ", zh: "大海" },
+  "風": { kana: "かぜ", zh: "风" },
+  "雨": { kana: "あめ", zh: "雨" },
+  "涙": { kana: "なみだ", zh: "眼泪" },
+  "声": { kana: "こえ", zh: "声音" },
+  "歌": { kana: "うた", zh: "歌" },
+  "言葉": { kana: "ことば", zh: "语言 / 话语" },
+  "時間": { kana: "じかん", zh: "时间" },
+  "今": { kana: "いま", zh: "现在" },
+  "今日": { kana: "きょう", zh: "今天" },
+  "明日": { kana: "あした", zh: "明天" },
+  "昨日": { kana: "きのう", zh: "昨天" },
+  "未来": { kana: "みらい", zh: "未来" },
+  "永遠": { kana: "えいえん", zh: "永远" },
+  "二人": { kana: "ふたり", zh: "两个人" },
+  "一人": { kana: "ひとり", zh: "一个人" },
+  "出会い": { kana: "であい", zh: "相遇" },
+  "別れ": { kana: "わかれ", zh: "离别" },
+  "思い出": { kana: "おもいで", zh: "回忆" },
+  "想い": { kana: "おもい", zh: "思念" },
+  "記憶": { kana: "きおく", zh: "记忆" },
+  "笑顔": { kana: "えがお", zh: "笑容" },
+  "瞳": { kana: "ひとみ", zh: "眼眸" },
+  "命": { kana: "いのち", zh: "生命" },
+  "手": { kana: "て", zh: "手" },
+  "目": { kana: "め", zh: "眼睛" },
+  "胸": { kana: "むね", zh: "胸口" },
+  "体": { kana: "からだ", zh: "身体" },
+  "顔": { kana: "かお", zh: "脸" },
+  "頭": { kana: "あたま", zh: "头" },
+  "名前": { kana: "なまえ", zh: "名字" },
+  "場所": { kana: "ばしょ", zh: "地方" },
+  "道": { kana: "みち", zh: "道路" },
+  "街": { kana: "まち", zh: "街道 / 城镇" },
+  "町": { kana: "まち", zh: "城镇" },
+  "家": { kana: "いえ", zh: "家" },
+  "景色": { kana: "けしき", zh: "景色" },
+  "花": { kana: "はな", zh: "花" },
+  "太陽": { kana: "たいよう", zh: "太阳" },
+  "雲": { kana: "くも", zh: "云" },
+  "雪": { kana: "ゆき", zh: "雪" },
+  "春": { kana: "はる", zh: "春天" },
+  "夏": { kana: "なつ", zh: "夏天" },
+  "秋": { kana: "あき", zh: "秋天" },
+  "冬": { kana: "ふゆ", zh: "冬天" },
+  "朝": { kana: "あさ", zh: "早晨" },
+  "夕方": { kana: "ゆうがた", zh: "傍晚" },
+  "始まり": { kana: "はじまり", zh: "开始" },
+  "終わり": { kana: "おわり", zh: "结束" },
+  "最後": { kana: "さいご", zh: "最后" },
+  "最初": { kana: "さいしょ", zh: "最初" },
+  "自分": { kana: "じぶん", zh: "自己" },
+  "友達": { kana: "ともだち", zh: "朋友" },
+  "家族": { kana: "かぞく", zh: "家人" },
+  "母": { kana: "はは", zh: "妈妈" },
+  "父": { kana: "ちち", zh: "爸爸" },
+  "子供": { kana: "こども", zh: "孩子" },
+  "大人": { kana: "おとな", zh: "大人" },
+  "人": { kana: "ひと", zh: "人" },
+  "人生": { kana: "じんせい", zh: "人生" },
+  "毎日": { kana: "まいにち", zh: "每天" },
+  "一瞬": { kana: "いっしゅん", zh: "一瞬间" },
+  "瞬間": { kana: "しゅんかん", zh: "瞬间" },
+  "少し": { kana: "すこし", zh: "一点" },
+  "全部": { kana: "ぜんぶ", zh: "全部" },
+  "何": { kana: "なに", zh: "什么" },
+  "誰": { kana: "だれ", zh: "谁" },
+  "どこ": { kana: "どこ", zh: "哪里" },
+  "いつ": { kana: "いつ", zh: "什么时候" },
+  "なぜ": { kana: "なぜ", zh: "为什么" },
+  "どうして": { kana: "どうして", zh: "为什么" },
+  "ずっと": { kana: "ずっと", zh: "一直" },
+  "もっと": { kana: "もっと", zh: "更加" },
+  "きっと": { kana: "きっと", zh: "一定" },
+  "たぶん": { kana: "たぶん", zh: "大概" },
+  "絶対": { kana: "ぜったい", zh: "绝对" },
+  "本当に": { kana: "ほんとうに", zh: "真的" },
+  "とても": { kana: "とても", zh: "非常" },
+  "すごい": { kana: "すごい", zh: "厉害" },
+  "素敵": { kana: "すてき", zh: "很棒" },
+  "優しい": { kana: "やさしい", zh: "温柔" },
+  "強い": { kana: "つよい", zh: "强壮 / 强" },
+  "弱い": { kana: "よわい", zh: "弱" },
+  "高い": { kana: "たかい", zh: "高 / 贵" },
+  "低い": { kana: "ひくい", zh: "低" },
+  "広い": { kana: "ひろい", zh: "宽广" },
+  "新しい": { kana: "あたらしい", zh: "新的" },
+  "古い": { kana: "ふるい", zh: "旧的" },
+  "白い": { kana: "しろい", zh: "白色" },
+  "黒い": { kana: "くろい", zh: "黑色" },
+  "赤い": { kana: "あかい", zh: "红色" },
+  "青い": { kana: "あおい", zh: "蓝色" },
+  "楽しい": { kana: "たのしい", zh: "开心" },
+  "悲しい": { kana: "かなしい", zh: "悲伤" },
+  "嬉しい": { kana: "うれしい", zh: "高兴" },
+  "寂しい": { kana: "さびしい", zh: "寂寞" },
+  "怖い": { kana: "こわい", zh: "可怕" },
+  "暑い": { kana: "あつい", zh: "（天气）热" },
+  "寒い": { kana: "さむい", zh: "冷" },
+  "冷たい": { kana: "つめたい", zh: "（物体）冰冷" },
+  "美味しい": { kana: "おいしい", zh: "好吃" },
+  "早い": { kana: "はやい", zh: "早" },
+  "遅い": { kana: "おそい", zh: "晚 / 慢" },
+  "大きい": { kana: "おおきい", zh: "大" },
+  "小さい": { kana: "ちいさい", zh: "小" },
+  "長い": { kana: "ながい", zh: "长" },
+  "短い": { kana: "みじかい", zh: "短" },
+  "好き": { kana: "すき", zh: "喜欢" },
+  "嫌い": { kana: "きらい", zh: "讨厌" },
+  "大切": { kana: "たいせつ", zh: "重要" },
+  "大丈夫": { kana: "だいじょうぶ", zh: "没关系 / 没问题" },
+  "元気": { kana: "げんき", zh: "精神 / 健康" },
+  "一緒に": { kana: "いっしょに", zh: "一起" },
+  "気持ち": { kana: "きもち", zh: "心情" },
+  "気分": { kana: "きぶん", zh: "心情 / 气氛" },
+  "頑張る": { kana: "がんばる", zh: "加油 / 努力" },
+  "アイドル": { kana: "アイドル", zh: "偶像" },
+  "ハート": { kana: "ハート", zh: "心" },
+  "ラブ": { kana: "ラブ", zh: "爱" },
+  "ドリーム": { kana: "ドリーム", zh: "梦想" },
+  "ストーリー": { kana: "ストーリー", zh: "故事" },
+  "ステージ": { kana: "ステージ", zh: "舞台" },
+  "メッセージ": { kana: "メッセージ", zh: "信息" },
+  "セカイ": { kana: "セカイ", zh: "世界" },
+  "ある": { kana: "ある", zh: "有（物）" },
+  "あった": { kana: "あった", zh: "有过（ある 的过去式）" },
+  "いる": { kana: "いる", zh: "有（人） / 在" },
+  "いて": { kana: "いて", zh: "在（いる 的て形）" },
+  "いた": { kana: "いた", zh: "在过（いる 的过去式）" },
+  "いない": { kana: "いない", zh: "不在" },
+  "する": { kana: "する", zh: "做" },
+  "して": { kana: "して", zh: "做（する 的て形）" },
+  "した": { kana: "した", zh: "做了（する 的过去式）" },
+  "しよう": { kana: "しよう", zh: "做吧（する 的意志形）" },
+  "なる": { kana: "なる", zh: "成为" },
+  "なって": { kana: "なって", zh: "成为（なる 的て形）" },
+  "なった": { kana: "なった", zh: "成为了（なる 的过去式）" },
+  "行く": { kana: "いく", zh: "去" },
+  "行って": { kana: "いって", zh: "去（行く 的て形）" },
+  "行った": { kana: "いった", zh: "去了（行く 的过去式）" },
+  "来る": { kana: "くる", zh: "来" },
+  "来て": { kana: "きて", zh: "来（来る 的て形）" },
+  "来た": { kana: "きた", zh: "来了（来る 的过去式）" },
+  "見る": { kana: "みる", zh: "看" },
+  "見て": { kana: "みて", zh: "看（見る 的て形）" },
+  "見た": { kana: "みた", zh: "看了（見る 的过去式）" },
+  "見える": { kana: "みえる", zh: "看得见" },
+  "聞く": { kana: "きく", zh: "听 / 问" },
+  "聞いて": { kana: "きいて", zh: "听（聞く 的て形）" },
+  "聞いた": { kana: "きいた", zh: "听了（聞く 的过去式）" },
+  "聞こえる": { kana: "きこえる", zh: "听得见" },
+  "言う": { kana: "いう", zh: "说" },
+  "言って": { kana: "いって", zh: "说（言う 的て形）" },
+  "言った": { kana: "いった", zh: "说了（言う 的过去式）" },
+  "思う": { kana: "おもう", zh: "想 / 觉得" },
+  "思って": { kana: "おもって", zh: "想着（思う 的て形）" },
+  "思った": { kana: "おもった", zh: "想了（思う 的过去式）" },
+  "泣く": { kana: "なく", zh: "哭" },
+  "泣いて": { kana: "ないて", zh: "哭（泣く 的て形）" },
+  "泣いた": { kana: "ないた", zh: "哭了（泣く 的过去式）" },
+  "笑う": { kana: "わらう", zh: "笑" },
+  "笑って": { kana: "わらって", zh: "笑（笑う 的て形）" },
+  "笑った": { kana: "わらった", zh: "笑了（笑う 的过去式）" },
+  "歌う": { kana: "うたう", zh: "唱歌" },
+  "歌って": { kana: "うたって", zh: "唱（歌う 的て形）" },
+  "歌った": { kana: "うたった", zh: "唱了（歌う 的过去式）" },
+  "待つ": { kana: "まつ", zh: "等待" },
+  "待って": { kana: "まって", zh: "等（待つ 的て形）" },
+  "待った": { kana: "まった", zh: "等了（待つ 的过去式）" },
+  "帰る": { kana: "かえる", zh: "回去 / 回家" },
+  "帰って": { kana: "かえって", zh: "回（帰る 的て形）" },
+  "帰った": { kana: "かえった", zh: "回去了（帰る 的过去式）" },
+  "忘れる": { kana: "わすれる", zh: "忘记" },
+  "忘れて": { kana: "わすれて", zh: "忘（忘れる 的て形）" },
+  "忘れた": { kana: "わすれた", zh: "忘了（忘れる 的过去式）" },
+  "忘れない": { kana: "わすれない", zh: "不忘（忘れる 的否定）" },
+  "覚える": { kana: "おぼえる", zh: "记住" },
+  "覚えて": { kana: "おぼえて", zh: "记住（覚える 的て形）" },
+  "覚えた": { kana: "おぼえた", zh: "记住了（覚える 的过去式）" },
+  "会う": { kana: "あう", zh: "见面" },
+  "会って": { kana: "あって", zh: "见面（会う 的て形）" },
+  "会った": { kana: "あった", zh: "见面了（会う 的过去式）" },
+  "出会う": { kana: "であう", zh: "相遇" },
+  "出会って": { kana: "であって", zh: "相遇（出会う 的て形）" },
+  "食べる": { kana: "たべる", zh: "吃" },
+  "食べて": { kana: "たべて", zh: "吃（食べる 的て形）" },
+  "食べた": { kana: "たべた", zh: "吃了（食べる 的过去式）" },
+  "飲む": { kana: "のむ", zh: "喝" },
+  "飲んで": { kana: "のんで", zh: "喝（飲む 的て形）" },
+  "飲んだ": { kana: "のんだ", zh: "喝了（飲む 的过去式）" },
+  "買う": { kana: "かう", zh: "买" },
+  "買って": { kana: "かって", zh: "买（買う 的て形）" },
+  "買った": { kana: "かった", zh: "买了（買う 的过去式）" },
+  "作る": { kana: "つくる", zh: "制作 / 做" },
+  "作って": { kana: "つくって", zh: "做（作る 的て形）" },
+  "作った": { kana: "つくった", zh: "做了（作る 的过去式）" },
+  "生きる": { kana: "いきる", zh: "活着" },
+  "信じる": { kana: "しんじる", zh: "相信" },
+  "伝える": { kana: "つたえる", zh: "传达" },
+  "守る": { kana: "まもる", zh: "守护" },
+  "輝く": { kana: "かがやく", zh: "闪耀" },
+  "光る": { kana: "ひかる", zh: "发光" },
+  "揺れる": { kana: "ゆれる", zh: "摇曳" },
+  "流れる": { kana: "ながれる", zh: "流淌" },
+  "溢れる": { kana: "あふれる", zh: "溢出" },
+  "咲く": { kana: "さく", zh: "（花）开" },
+  "浮かぶ": { kana: "うかぶ", zh: "浮现" },
+  "落ちる": { kana: "おちる", zh: "坠落 / 落下" },
+  "消える": { kana: "きえる", zh: "消失" },
+  "変わる": { kana: "かわる", zh: "变化" },
+  "戻る": { kana: "もどる", zh: "返回" },
+  "別れる": { kana: "わかれる", zh: "分别" },
+  "踊る": { kana: "おどる", zh: "跳舞" },
+  "走る": { kana: "はしる", zh: "跑" },
+  "飛ぶ": { kana: "とぶ", zh: "飞" },
+  "歩く": { kana: "あるく", zh: "步行" },
+  "探す": { kana: "さがす", zh: "寻找" },
+  "考える": { kana: "かんがえる", zh: "思考" },
+  "感じる": { kana: "かんじる", zh: "感受" },
+  "届く": { kana: "とどく", zh: "到达 / 送达" },
+  "届ける": { kana: "とどける", zh: "送到" },
+  "抱きしめる": { kana: "だきしめる", zh: "拥抱" },
+  "続ける": { kana: "つづける", zh: "继续" },
+  "やめる": { kana: "やめる", zh: "放弃 / 停止" },
+  "始める": { kana: "はじめる", zh: "开始（动作）" },
+  "終わる": { kana: "おわる", zh: "结束" },
+  "決める": { kana: "きめる", zh: "决定" },
+  "選ぶ": { kana: "えらぶ", zh: "选择" },
+  "見つける": { kana: "みつける", zh: "找到" },
+  "呼ぶ": { kana: "よぶ", zh: "叫" },
+  "答える": { kana: "こたえる", zh: "回答" },
+  "わかる": { kana: "わかる", zh: "明白 / 懂" },
+  "できる": { kana: "できる", zh: "能 / 会" },
+  "欲しい": { kana: "ほしい", zh: "想要" },
+  "必要": { kana: "ひつよう", zh: "必要" },
+  "いっぱい": { kana: "いっぱい", zh: "满满的 / 很多" },
+  "たくさん": { kana: "たくさん", zh: "很多" },
+  "もう一度": { kana: "もういちど", zh: "再一次" }
+};
 
 const PHRASES = [
   { ja: "おはようございます", romaji: "ohayou gozaimasu", zh: "早上好", cat: "问候" },
@@ -936,6 +1603,7 @@ function renderSongLesson() {
         <p class="romaji" id="activeLineRomaji">${activeSong.romaji}</p>
         <p class="trans" id="activeLineZh">${activeSong.zh}</p>
         <div class="word-chips" id="activeLineWords"></div>
+        <div class="line-grammar" id="lineGrammar"></div>
         <button class="speak-btn" data-line-speak>朗读这句</button>
       </div>
     </div>
@@ -993,15 +1661,22 @@ function renderActiveLyricLine() {
   if (lyricIndex >= lines.length) lyricIndex = lines.length - 1;
   const line = lines[lyricIndex];
   $("#activeLineJa").textContent = line.ja;
-  $("#activeLineRomaji").textContent = line.romaji;
-  $("#activeLineZh").textContent = line.zh;
+  $("#activeLineRomaji").textContent = line.romaji || "";
+  $("#activeLineZh").textContent = line.zh || "（暂无中文翻译，可在导入页补全）";
   $("#lineCounter").textContent = `${lyricIndex + 1} / ${lines.length}`;
-  $("#activeLineWords").innerHTML = (line.words || []).map(word => `
-    <span class="word-chip">
+  const chips = (line.words || []).filter(word => !FUNCTION_WORDS.has(word.surface)).map(word => `
+    <button class="word-chip" data-speak="${(word.kana || word.surface).replace(/"/g, "")}">
       <strong>${word.surface}</strong>
-      <small>${word.kana} · ${word.zh}</small>
-    </span>
+      <small>${word.kana || "…"} · ${(word.zh && word.zh !== "未收录") ? word.zh : "…"}</small>
+    </button>
   `).join("");
+  $("#activeLineWords").innerHTML = chips || `<span class="word-chip"><strong>${line.ja}</strong><small>点右上角播放听原句</small></span>`;
+  const lineGrammar = detectGrammarIds(line.ja)
+    .map(id => GRAMMAR_POINTS.find(point => point.id === id))
+    .filter(Boolean);
+  $("#lineGrammar").innerHTML = lineGrammar.length
+    ? lineGrammar.map(point => `<button class="grammar-chip" data-grammar-id="${point.id}">${point.pattern} ${point.title}</button>`).join("")
+    : `<span class="grammar-chip muted">本句暂未匹配到已收录语法点</span>`;
   $("#prevLine").disabled = lines.length < 2;
   $("#nextLine").disabled = lines.length < 2;
 }
@@ -1030,7 +1705,7 @@ function renderGrammar() {
   const filter = $("#grammarFilter").value || "all";
   const filtered = GRAMMAR_POINTS.filter(point => filter === "all" || point.level === filter);
   $("#grammarList").innerHTML = filtered.map(point => `
-    <article class="grammar-card">
+    <article class="grammar-card" data-grammar-id="${point.id}">
       <div class="grammar-head">
         <span class="level-badge">${point.level}</span>
         <span class="song-source">出自 ${point.song}</span>
@@ -1046,7 +1721,7 @@ function renderGrammar() {
           </div>
         `).join("")}
       </div>
-      <button class="ghost-btn grammar-song-link" data-song-target="${point.songId}">去歌词里再看一遍</button>
+      ${point.songId ? `<button class="ghost-btn grammar-song-link" data-song-target="${point.songId}">去歌词里再看一遍</button>` : ""}
     </article>
   `).join("");
 }
@@ -1137,6 +1812,7 @@ function renderCustomSongs() {
         </div>
         <div class="custom-actions">
           <button class="primary-btn" data-custom-open="${song.id}">开始学习</button>
+          <button class="ghost-btn" data-reparse="${song.id}">重新解析</button>
           <button class="ghost-btn" data-edit-custom="${song.id}">补歌词</button>
           <button class="danger-btn" data-remove-custom="${song.id}">删除</button>
         </div>
@@ -1258,15 +1934,16 @@ async function fetchLyricsForTrack(index) {
     search: `${track.title} ${track.artist}`,
     neteaseId: track.id || null,
     lyric: lines[0].ja,
-    romaji: "",
-    zh: "",
+    romaji: lines[0].romaji || "",
+    zh: lines[0].zh || "",
     lines,
     vocab: enriched.vocab,
     grammar: "已自动匹配歌词中出现的语法点。",
     grammarPointIds: enriched.grammarPointIds,
-    quizLine: null,
-    options: [],
-    answer: null,
+    quizLine: (enriched.quiz && enriched.quiz.quizLine) || null,
+    options: (enriched.quiz && enriched.quiz.options) || [],
+    answer: (enriched.quiz && enriched.quiz.answer) || null,
+    enriched: true,
     isCustom: true
   };
   if (existing) {
@@ -1280,7 +1957,7 @@ async function fetchLyricsForTrack(index) {
   status.textContent = `已获取 ${track.title} 的 ${lines.length} 句歌词，可以开始学习了。`;
 }
 
-function importLyricsFromForm() {
+async function importLyricsFromForm() {
   const title = $("#newSongTitle").value.trim();
   const artist = $("#newSongArtist").value.trim() || "未知歌手";
   const neteaseId = $("#newSongNeteaseId").value.trim();
@@ -1300,22 +1977,31 @@ function importLyricsFromForm() {
     };
   }).filter(line => line.ja);
   const firstLine = lines[0].ja;
+  const statusEl = $("#importStatus");
+  if (statusEl) statusEl.textContent = "正在拆解单词、匹配语法、生成发音…";
+  let enriched;
+  try {
+    enriched = await enrichLyricLines(lines);
+  } catch (error) {
+    enriched = { lines, vocab: [], grammarPointIds: [], quiz: null };
+  }
   const songData = {
     id: `custom-${Date.now()}`,
     title: title || firstLine.slice(0, 20),
     artist,
     search: `${title || firstLine} ${artist}`,
     neteaseId: neteaseId || null,
-    lyric: firstLine,
-    romaji: lines[0].romaji || "",
-    zh: lines[0].zh || "",
-    lines,
-    vocab: [],
-    grammar: grammarNote || "还没有学习笔记，可以在这里写下想掌握的语法点。",
-    grammarPointIds: [],
-    quizLine: null,
-    options: [],
-    answer: null,
+    lyric: enriched.lines[0].ja,
+    romaji: enriched.lines[0].romaji || "",
+    zh: enriched.lines[0].zh || "",
+    lines: enriched.lines,
+    vocab: enriched.vocab,
+    grammar: grammarNote || "已自动匹配歌词中出现的语法点。",
+    grammarPointIds: enriched.grammarPointIds,
+    quizLine: (enriched.quiz && enriched.quiz.quizLine) || null,
+    options: (enriched.quiz && enriched.quiz.options) || [],
+    answer: (enriched.quiz && enriched.quiz.answer) || null,
+    enriched: true,
     isCustom: true
   };
   let customSong;
@@ -1336,6 +2022,7 @@ function importLyricsFromForm() {
   renderSync();
   renderSongs();
   switchView("songs");
+  if (statusEl) statusEl.textContent = `已解析 ${enriched.lines.length} 句歌词：拆出 ${enriched.vocab.length} 个生词，匹配 ${enriched.grammarPointIds.length} 个语法点。`;
   toast("歌词已保存，开始学习吧");
 }
 
@@ -1420,15 +2107,150 @@ function tokenizeJapanese(text) {
   return cleaned.match(/[\u3040-\u30ff]+|[\u3400-\u9fff]+/g) || [];
 }
 
+const STEM_SUFFIXES = [
+  "っていた", "ている", "ています", "てしまう", "てもら", "てあげ",
+  "ましょう", "ました", "ませんか", "ません", "ながら", "ように",
+  "られた", "そして", "だから", "ないで", "ない",
+  "して", "きたい", "いた", "って", "った", "れて", "した",
+  "たい", "てる", "ます", "です", "けど", "たら", "なら", "から", "まで",
+  "だ", "た", "て", "る"
+];
+
+function stemJapaneseToken(token) {
+  if (!token) return "";
+  const candidates = [token];
+  for (const suffix of STEM_SUFFIXES) {
+    if (token.length > suffix.length && token.endsWith(suffix)) {
+      candidates.push(token.slice(0, -suffix.length));
+    }
+  }
+  for (const candidate of candidates) {
+    if (COMMON_GLOSS[candidate]) return candidate;
+    if (WORDS.some(word => word.ja === candidate || word.kana === candidate)) return candidate;
+  }
+  return "";
+}
+
 function lookupLocalWord(token) {
-  const local = WORDS.find(word => word.ja === token || word.kana === token);
-  if (local) {
-    return { ja: token, kana: local.kana || "", zh: local.zh };
+  const exactWord = WORDS.find(word => word.ja === token || word.kana === token);
+  if (exactWord) {
+    return { ja: token, kana: exactWord.kana || "", zh: exactWord.zh };
+  }
+  const exactGloss = COMMON_GLOSS[token];
+  if (exactGloss) {
+    return { ja: token, kana: exactGloss.kana, zh: exactGloss.zh };
+  }
+  const stem = stemJapaneseToken(token);
+  const stemGloss = COMMON_GLOSS[stem];
+  if (stemGloss) {
+    return { ja: token, kana: stemGloss.kana, zh: stemGloss.zh };
   }
   if (state.wordCache[token]) {
     return { ja: token, kana: state.wordCache[token].kana || "", zh: state.wordCache[token].zh || "" };
   }
   return null;
+}
+
+const KANA_TO_ROMAJI = (() => {
+  const map = new Map();
+  HIRAGANA.forEach(([char, reading]) => map.set(char, reading));
+  KATAKANA.forEach(([char, reading]) => map.set(char, reading));
+  const voiced = {
+    "が": "ga", "ぎ": "gi", "ぐ": "gu", "げ": "ge", "ご": "go",
+    "ざ": "za", "じ": "ji", "ず": "zu", "ぜ": "ze", "ぞ": "zo",
+    "だ": "da", "ぢ": "ji", "づ": "zu", "で": "de", "ど": "do",
+    "ば": "ba", "び": "bi", "ぶ": "bu", "べ": "be", "ぼ": "bo",
+    "ぱ": "pa", "ぴ": "pi", "ぷ": "pu", "ぺ": "pe", "ぽ": "po",
+    "ゔ": "vu",
+    "ガ": "ga", "ギ": "gi", "グ": "gu", "ゲ": "ge", "ゴ": "go",
+    "ザ": "za", "ジ": "ji", "ズ": "zu", "ゼ": "ze", "ゾ": "zo",
+    "ダ": "da", "ヂ": "ji", "ヅ": "zu", "デ": "de", "ド": "do",
+    "バ": "ba", "ビ": "bi", "ブ": "bu", "ベ": "be", "ボ": "bo",
+    "パ": "pa", "ピ": "pi", "プ": "pu", "ペ": "pe", "ポ": "po",
+    "ヴ": "vu"
+  };
+  Object.keys(voiced).forEach(char => map.set(char, voiced[char]));
+  map.set("ー", "");
+  return map;
+})();
+
+const SMALL_VOWEL = {
+  "ぁ": "a", "ぃ": "i", "ぅ": "u", "ぇ": "e", "ぉ": "o",
+  "ァ": "a", "ィ": "i", "ゥ": "u", "ェ": "e", "ォ": "o"
+};
+
+const SMALL_Y = {
+  "ゃ": "a", "ゅ": "u", "ょ": "o",
+  "ャ": "a", "ュ": "u", "ョ": "o"
+};
+
+const PARTICLE_ROMAJI = { "は": "wa", "へ": "e", "を": "o" };
+
+function combineKanaWithSmall(base, small) {
+  const baseRomaji = KANA_TO_ROMAJI.get(base) || "";
+  const cons = baseRomaji.replace(/[aeiou]$/, "");
+  if (SMALL_Y[small]) {
+    if (!cons) return SMALL_Y[small];
+    return ["sh", "ch", "j"].includes(cons) ? cons + SMALL_Y[small] : cons + "y" + SMALL_Y[small];
+  }
+  return cons + SMALL_VOWEL[small];
+}
+
+function kanaToRomaji(text) {
+  const chars = Array.from(String(text || "").trim());
+  let out = "";
+  let doubleNext = false;
+  for (let i = 0; i < chars.length; i++) {
+    const ch = chars[i];
+    let chunk = "";
+    if (ch === "っ" || ch === "ッ") {
+      doubleNext = true;
+      continue;
+    }
+    if (ch === "ん" || ch === "ン") {
+      const next = chars[i + 1] || "";
+      chunk = /[ばぱまぶぷむぼぽもバパマブプムボポモ]/.test(next) ? "m" : "n";
+    } else if (SMALL_Y[ch] || SMALL_VOWEL[ch]) {
+      const prev = chars[i - 1] || "";
+      chunk = combineKanaWithSmall(prev, ch);
+    } else {
+      const next = chars[i + 1] || "";
+      if (SMALL_Y[next] || SMALL_VOWEL[next]) {
+        chunk = combineKanaWithSmall(ch, next);
+        i += 1;
+      } else {
+        chunk = KANA_TO_ROMAJI.get(ch) || "";
+      }
+    }
+    if (doubleNext && chunk) {
+      chunk = chunk[0] + chunk;
+      doubleNext = false;
+    }
+    out += chunk;
+  }
+  return out;
+}
+
+function buildLineRomaji(line) {
+  if (line.romaji) return line.romaji;
+  if (!line.ja) return "";
+  const tokens = line.words && line.words.length ? line.words : tokenizeJapanese(line.ja).map(surface => ({ surface, kana: "" }));
+  const covered = tokens.filter(word => !FUNCTION_WORDS.has(word.surface));
+  const allKana = !/[\u3400-\u9fff]/.test(line.ja);
+  if (allKana) {
+    return tokens.map(word => {
+      if (FUNCTION_WORDS.has(word.surface) && PARTICLE_ROMAJI[word.surface]) return PARTICLE_ROMAJI[word.surface];
+      const kana = word.kana || word.surface;
+      return kanaToRomaji(kana);
+    }).filter(Boolean).join(" ");
+  }
+  if (covered.length && covered.every(word => word.kana)) {
+    return tokens.map(word => {
+      if (FUNCTION_WORDS.has(word.surface) && PARTICLE_ROMAJI[word.surface]) return PARTICLE_ROMAJI[word.surface];
+      return kanaToRomaji(word.kana || "");
+    }).filter(Boolean).join(" ");
+  }
+  return "";
 }
 
 async function lookupJishoWord(token) {
@@ -1461,10 +2283,55 @@ function detectGrammarIds(text) {
     ["nda", /んだ/],
     ["hazu", /はず/],
     ["noni", /のに/],
-    ["iru-continuation", /ている/],
-    ["tai", /たい/]
+    ["iru-continuation", /ている|てる/],
+    ["tai", /たい/],
+    ["kudasai", /てください/],
+    ["teimasu", /ています|てます/],
+    ["masenka", /ませんか/],
+    ["mashou", /ましょう/],
+    ["kara", /から/],
+    ["made", /まで/],
+    ["keredo", /けど|けれど/],
+    ["node", /ので/],
+    ["nara", /なら(?!ば)/],
+    ["kamoshirenai", /かも(しれない)?/],
+    ["dake", /だけ(?!ど)/],
+    ["shika", /しか(?!し)/],
+    ["yori", /より/],
+    ["hodo", /ほど/],
+    ["tumori", /つもり/],
+    ["darou", /だろう|でしょう/],
+    ["rashii", /らしい/],
+    ["mitai", /みたい/],
+    ["nagara", /ながら/],
+    ["teageru", /てあげ/],
+    ["temorau", /てもら/],
+    ["tekureru", /てくれ/],
+    ["teoku", /ておく/],
+    ["teshimau", /てしまう/],
+    ["youninaru", /ようになる/],
+    ["tameni", /ために/],
+    ["dekiru", /できる/],
+    ["zuni", /ずに/],
+    ["tara", /たら/],
+    ["teii", /てもいい|てよい/],
+    ["nakereba", /なければ|なきゃ/]
   ];
   return detectors.filter(([, pattern]) => pattern.test(text || "")).map(([id]) => id);
+}
+
+function buildAutoQuiz(lines, vocab) {
+  const candidates = (vocab || []).filter(word => word.zh && word.kana && word.ja && !FUNCTION_WORDS.has(word.ja));
+  if (candidates.length < 4) return null;
+  const answer = candidates[Math.floor(Math.random() * candidates.length)];
+  const distractors = shuffle(candidates.filter(word => word.ja !== answer.ja)).slice(0, 3).map(word => word.ja);
+  const line = lines.find(item => item.ja && item.ja.includes(answer.ja));
+  if (!line) return null;
+  return {
+    quizLine: line.ja.replace(answer.ja, "____"),
+    options: shuffle([answer.ja, ...distractors]),
+    answer: answer.ja
+  };
 }
 
 async function enrichLyricLines(lines) {
@@ -1473,6 +2340,7 @@ async function enrichLyricLines(lines) {
   lines.forEach(line => {
     line.words = tokenizeJapanese(line.ja).map(surface => ({ surface, kana: "", zh: "" }));
     line.words.forEach(word => {
+      if (FUNCTION_WORDS.has(word.surface)) return;
       if (!tokenSet.has(word.surface)) {
         tokenSet.add(word.surface);
         uniqueTokens.push(word.surface);
@@ -1484,13 +2352,29 @@ async function enrichLyricLines(lines) {
   const lookups = uniqueTokens.slice(0, limit);
   const results = new Array(lookups.length);
   let cursor = 0;
+  let consecutiveFails = 0;
   async function worker() {
     while (cursor < lookups.length) {
       const index = cursor++;
       const token = lookups[index];
-      results[index] = lookupLocalWord(token) || await lookupJishoWord(token) || { ja: token, kana: "", zh: "未收录" };
-      if (results[index].zh && results[index].zh !== "未收录") {
-        state.wordCache[token] = results[index];
+      const local = lookupLocalWord(token);
+      if (local) {
+        results[index] = local;
+        consecutiveFails = 0;
+        continue;
+      }
+      if (consecutiveFails >= 6) {
+        results[index] = { ja: token, kana: "", zh: "未收录" };
+        continue;
+      }
+      const remote = await lookupJishoWord(token);
+      if (remote) {
+        results[index] = remote;
+        state.wordCache[token] = remote;
+        consecutiveFails = 0;
+      } else {
+        results[index] = { ja: token, kana: "", zh: "未收录" };
+        consecutiveFails += 1;
       }
     }
   }
@@ -1502,6 +2386,11 @@ async function enrichLyricLines(lines) {
   const grammarSet = new Set();
   lines.forEach(line => {
     line.words.forEach(word => {
+      if (FUNCTION_WORDS.has(word.surface)) {
+        word.kana = word.surface;
+        word.zh = "";
+        return;
+      }
       const info = wordMap.get(word.surface) || { ja: word.surface, kana: "", zh: "" };
       word.kana = info.kana || "";
       word.zh = info.zh || "";
@@ -1509,12 +2398,15 @@ async function enrichLyricLines(lines) {
         vocabMap.set(word.surface, { ja: word.surface, kana: info.kana || "", zh: info.zh });
       }
     });
+    if (!line.romaji) line.romaji = buildLineRomaji(line);
     detectGrammarIds(line.ja).forEach(id => grammarSet.add(id));
   });
+  const vocab = Array.from(vocabMap.values()).slice(0, 40);
   return {
     lines,
-    vocab: Array.from(vocabMap.values()).slice(0, 40),
-    grammarPointIds: Array.from(grammarSet)
+    vocab,
+    grammarPointIds: Array.from(grammarSet),
+    quiz: buildAutoQuiz(lines, vocab)
   };
 }
 
@@ -1523,6 +2415,31 @@ async function fetchAndParseSongLyrics(song) {
   const lines = parseLyricResponse(data);
   if (!lines.length) return null;
   return enrichLyricLines(lines);
+}
+
+async function upgradeStoredSongs() {
+  const pending = state.customSongs.filter(song => song.lines && song.lines.length && !song.enriched);
+  for (const song of pending) {
+    const cloned = song.lines.map(line => ({ ...line, words: [] }));
+    try {
+      const enriched = await enrichLyricLines(cloned);
+      song.lines = enriched.lines;
+      song.vocab = enriched.vocab;
+      song.grammarPointIds = enriched.grammarPointIds;
+      song.quizLine = (enriched.quiz && enriched.quiz.quizLine) || null;
+      song.options = (enriched.quiz && enriched.quiz.options) || [];
+      song.answer = (enriched.quiz && enriched.quiz.answer) || null;
+      song.enriched = true;
+      saveState();
+    } catch (error) {
+      song.enriched = true;
+    }
+  }
+  if (pending.length) {
+    renderSync();
+    renderSongs();
+    toast(`已自动为 ${pending.length} 首旧歌补上单词和语法解析`);
+  }
 }
 
 async function searchSongs() {
@@ -1540,8 +2457,8 @@ async function searchSongs() {
   lastSearchResults = songs.map(song => ({
     id: song.id,
     title: song.name,
-    artist: (song.artists || []).map(item => item.name).join(" / "),
-    album: (song.album && song.album.name) || ""
+    artist: (song.artists || song.ar || []).map(item => item.name).join(" / "),
+    album: (song.album && song.album.name) || (song.al && song.al.name) || ""
   }));
   renderSongSearchResults();
   status.textContent = lastSearchResults.length ? `找到 ${lastSearchResults.length} 首，选择一首获取完整歌词。` : "没有搜到结果，请换一个歌名。";
@@ -1583,9 +2500,10 @@ async function handleSearchSong(index) {
     vocab: parsed.vocab,
     grammar: "已自动匹配歌词中出现的语法点。",
     grammarPointIds: parsed.grammarPointIds,
-    quizLine: null,
-    options: [],
-    answer: null,
+    quizLine: (parsed.quiz && parsed.quiz.quizLine) || null,
+    options: (parsed.quiz && parsed.quiz.options) || [],
+    answer: (parsed.quiz && parsed.quiz.answer) || null,
+    enriched: true,
     isCustom: true
   };
   if (existing) {
@@ -1601,6 +2519,29 @@ async function handleSearchSong(index) {
   renderSongs();
   switchView("songs");
   toast(`已解析《${song.title}》，共 ${parsed.lines.length} 句歌词`);
+}
+
+async function reparseCustomSong(id) {
+  const song = state.customSongs.find(item => item.id === id);
+  if (!song || !song.lines || !song.lines.length) return;
+  toast(`正在重新解析《${song.title}》…`);
+  const cloned = song.lines.map(line => ({ ...line, words: [] }));
+  try {
+    const enriched = await enrichLyricLines(cloned);
+    song.lines = enriched.lines;
+    song.vocab = enriched.vocab;
+    song.grammarPointIds = enriched.grammarPointIds;
+    song.quizLine = (enriched.quiz && enriched.quiz.quizLine) || null;
+    song.options = (enriched.quiz && enriched.quiz.options) || [];
+    song.answer = (enriched.quiz && enriched.quiz.answer) || null;
+    song.enriched = true;
+    saveState();
+    renderSync();
+    renderSongs();
+    toast(`已重新解析：${enriched.vocab.length} 个生词 · ${enriched.grammarPointIds.length} 个语法点`);
+  } catch (error) {
+    toast("重新解析失败，请检查网络");
+  }
 }
 
 function renderAnimeLesson() {
@@ -1866,6 +2807,21 @@ document.addEventListener("click", event => {
     return;
   }
 
+  const grammarChip = event.target.closest("[data-grammar-id]");
+  if (grammarChip) {
+    switchView("grammar");
+    const filter = $("#grammarFilter");
+    if (filter) filter.value = "all";
+    renderGrammar();
+    const card = document.querySelector(`.grammar-card[data-grammar-id="${grammarChip.dataset.grammarId}"]`);
+    if (card) {
+      card.scrollIntoView({ behavior: "smooth", block: "center" });
+      card.classList.add("grammar-highlight");
+      window.setTimeout(() => card.classList.remove("grammar-highlight"), 1800);
+    }
+    return;
+  }
+
   const speakButton = event.target.closest("[data-speak]");
   if (speakButton) {
     speak(speakButton.dataset.speak);
@@ -1921,6 +2877,12 @@ document.addEventListener("click", event => {
     return;
   }
 
+  const reparseButton = event.target.closest("[data-reparse]");
+  if (reparseButton) {
+    reparseCustomSong(reparseButton.dataset.reparse);
+    return;
+  }
+
   const editCustomButton = event.target.closest("[data-edit-custom]");
   if (editCustomButton) {
     const song = state.customSongs.find(item => item.id === editCustomButton.dataset.editCustom);
@@ -1954,7 +2916,7 @@ document.addEventListener("click", event => {
 
   const songCard = event.target.closest("[data-song-id]");
   if (songCard) {
-    activeSong = SONGS.find(song => song.id === songCard.dataset.songId);
+    activeSong = [...SONGS, ...state.customSongs].find(song => song.id === songCard.dataset.songId) || activeSong;
     lyricIndex = 0;
     renderSongs();
     return;
@@ -2177,3 +3139,4 @@ window.addEventListener("beforeunload", saveState);
 $("#tripDate").value = state.tripDate;
 renderAll();
 switchView(state.currentView || "songs");
+upgradeStoredSongs();

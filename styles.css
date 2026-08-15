@@ -956,12 +956,60 @@ main {
   font-size: 13px;
 }
 
+button.word-chip {
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+button.word-chip:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
 .word-chip strong {
   font-size: 16px;
 }
 
 .word-chip small {
   color: rgba(255, 255, 255, 0.68);
+}
+
+.line-grammar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.grammar-chip {
+  padding: 4px 10px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: var(--indigo-soft);
+  color: var(--indigo);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter 0.15s ease;
+}
+
+.grammar-chip:hover {
+  filter: brightness(0.92);
+}
+
+.grammar-chip.muted {
+  background: var(--panel);
+  color: var(--muted);
+  cursor: default;
+}
+
+.grammar-highlight {
+  outline: 2px solid var(--indigo);
+  outline-offset: 3px;
+  transition: outline 0.3s ease;
 }
 
 .lesson-grid {
