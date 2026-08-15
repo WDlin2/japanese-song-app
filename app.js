@@ -2007,7 +2007,7 @@ async function fetchLyricsForTrack(index) {
   finishEnrichInBackground(existing || songData, {
     onDone: enriched => {
       status.textContent = `已获取 ${track.title} 的 ${parsedLines.length} 句歌词：${enriched.vocab.length} 个生词 · ${enriched.grammarPointIds.length} 个语法点`;
-      runAIAfterEnrich(existing || songData, text => { status.textContent = text; });
+      autoProcessSong(existing || songData, text => { status.textContent = text; });
     }
   });
 }
@@ -2120,7 +2120,7 @@ async function importLyricsFromForm() {
   finishEnrichInBackground(customSong, {
     onDone: enriched => {
       if (statusEl) statusEl.textContent = `解析完成：${enriched.vocab.length} 个生词 · ${enriched.grammarPointIds.length} 个语法点`;
-      runAIAfterEnrich(customSong, text => { if (statusEl) statusEl.textContent = text; });
+      autoProcessSong(customSong, text => { if (statusEl) statusEl.textContent = text; });
     }
   });
 }
@@ -2697,7 +2697,7 @@ function applyProofreadToSong(song, pastedText, romajiLines) {
 
 async function fetchHtmlViaChain(target) {
   try {
-    const direct = await fetchWithTimeout(target, 5000);
+    const direct = await fetchWithTimeout(target, 8000);
     if (direct.ok) {
       const text = await direct.text();
       if (text && text.length > 2000) return text;
@@ -2712,7 +2712,7 @@ async function fetchHtmlViaChain(target) {
   for (const proxy of proxies) {
     try {
       const encoded = encodeURIComponent(target);
-      const response = await fetchWithTimeout(proxy.url(encoded), 8000);
+      const response = await fetchWithTimeout(proxy.url(encoded), 20000);
       const text = await response.text();
       if (proxy.mode === "get") {
         try {
@@ -2733,7 +2733,22 @@ async function fetchHtmlViaChain(target) {
 
 function extractUtaTenResults(html) {
   const results = [];
-  const blocks = String(html || "").match(/<article class="list__item">[\s\S]*?<\/article>/g) || [];
+  const source = String(html || "");
+  const rows = source.match(/<tr>[\s\S]*?<\/tr>/g) || [];
+  rows.forEach(row => {
+    if (!row.includes("searchResult__title")) return;
+    const linkMatch = row.match(/href="\/lyric\/([a-z0-9]+)\/"/);
+    const titleMatch = row.match(/searchResult__title">[\s\S]*?<a[^>]*>([\s\S]*?)<\/a>/);
+    if (!linkMatch || !titleMatch) return;
+    const artistMatch = row.match(/searchResult__artist">[\s\S]*?<a[^>]*>([\s\S]*?)<\/a>/);
+    results.push({
+      id: linkMatch[1],
+      title: titleMatch[1].replace(/<[^>]+>/g, "").trim(),
+      artist: artistMatch ? artistMatch[1].replace(/<[^>]+>/g, "").trim() : ""
+    });
+  });
+  if (results.length) return results;
+  const blocks = source.match(/<article class="list__item">[\s\S]*?<\/article>/g) || [];
   blocks.forEach(block => {
     const linkMatch = block.match(/href="\/lyric\/([a-z0-9]+)\/"/);
     const titleMatch = block.match(/class="list__link">\s*([^<]+?)\s*<\/span>/);
@@ -2820,6 +2835,7 @@ async function runUtaTenFetch(song, setStatus) {
   const result = applyProofreadToSong(song, parsed.furiganaLines.join("\n"), parsed.romajiLines);
   if (result.error) return result;
   song.utatenSource = `${best.title} (utaten)`;
+  song.utatenReference = parsed.furiganaLines.slice(0, 60);
   saveState();
   renderSync();
   renderSongs();
@@ -2846,9 +2862,12 @@ async function fetchUtaTenReadings(song) {
   let timeoutId = null;
   try {
     const timeoutPromise = new Promise(resolve => {
-      timeoutId = window.setTimeout(() => resolve({ error: "自动注音超时：utaten 代理当前不可用，已用本地注音，可手动粘贴校对" }), 10000);
+      timeoutId = window.setTimeout(() => resolve({ error: "自动注音超时：utaten 代理当前不可用，已用本地注音，可手动粘贴校对" }), 25000);
     });
-    const result = await Promise.race([runUtaTenFetch(song, setStatus), timeoutPromise]);
+    const result = await Promise.race([
+      runUtaTenFetch(song, setStatus).catch(() => ({ error: "utaten 抓取失败（网络异常）" })),
+      timeoutPromise
+    ]);
     window.clearTimeout(timeoutId);
     if (result.error) {
       utatenBlocked = true;
@@ -2929,6 +2948,34 @@ function parseAiLyricResponse(content) {
   return JSON.parse(text.slice(start, end + 1));
 }
 
+function buildAiKanaPrompt(batch) {
+  const lines = batch.map((line, index) => `[${index}] ${line.ja}`).join("\n");
+  return [
+    {
+      role: "system",
+      content: "你是日语注音助手。请把用户给的每一行歌词转换成完整的平假名注音（整句注音，一个汉字都不留），注意语境读音（如 今日→きょう、一人→ひとり、分かった→わかった、空→そら、日々→ひび）。只输出 JSON：{\"lines\":[{\"index\":0,\"kana\":\"しずむようにとけてゆくように\"}]}。不要输出任何其他文字。"
+    },
+    { role: "user", content: lines }
+  ];
+}
+
+function buildAiWordsPrompt(batch, lineKana, context) {
+  const lines = batch.map((line, index) => `[${index}] ${line.ja}`).join("\n");
+  const songInfo = (context && context.title)
+    ? `歌曲：《${context.title}》${context.artist ? ` - ${context.artist}` : ""}。\n`
+    : "";
+  const kanaHint = lineKana ? `\n该句的完整注音是「${lineKana}」。每个词的假名拼接起来必须与它完全一致。` : "";
+  return [
+    {
+      role: "system",
+      content: songInfo +
+        "你是日语歌词单词拆解与语法讲解助手。用户会给出一行歌词，请逐词拆解，每个词给出：中文意思（必须是中文，禁止英文）和语境读音假名。" + kanaHint +
+        " 语法点：{pattern, title, explain, example_ja, example_zh}（每行至少 1 个）。只输出 JSON：{\"lines\":[{\"index\":0,\"words\":[{\"surface\":\"沈む\",\"kana\":\"しずむ\",\"zh\":\"沉没\"}],\"grammar\":[{\"pattern\":\"〜ように\",\"title\":\"比喻\",\"explain\":\"像…一样\",\"example_ja\":\"鳥のように飛ぶ\",\"example_zh\":\"像鸟一样飞\"}]}]}。不要输出任何其他文字。"
+    },
+    { role: "user", content: lines }
+  ];
+}
+
 function buildAiLyricPrompt(batch, context) {
   const lines = batch.map((line, index) => `[${index}] ${line.ja}`).join("\n");
   const songInfo = (context && context.title)
@@ -2995,7 +3042,7 @@ function wordRomaji(word) {
   return word.kana ? kanaToRomaji(word.kana) : "";
 }
 
-function applyAiLineToSongLine(songLine, aiLine) {
+function applyAiLineToSongLine(songLine, aiLine, options = {}) {
   const enrichedWords = songLine.words || [];
   let applied = 0;
   if (Array.isArray(aiLine.words) && aiLine.words.length) {
@@ -3006,14 +3053,24 @@ function applyAiLineToSongLine(songLine, aiLine) {
       if (!surface) return;
       if (seen.has(surface)) return;
       seen.add(surface);
-      const rawKana = String(item.kana || "").trim();
-      let kana = (!hasKanjiText(rawKana) && rawKana) ? rawKana : "";
-      let verified = Boolean(kana);
-      if (!kana) {
-        const fallback = findFallbackKana(enrichedWords, surface);
-        if (fallback) {
-          kana = fallback.kana;
-          verified = fallback.verified;
+      let kana = "";
+      let verified = false;
+      if (options.keepReadings) {
+        const existing = songLine.words.find(word => word.surface === surface);
+        if (existing) {
+          kana = existing.kana || "";
+          verified = Boolean(existing.verified);
+        }
+      } else {
+        const rawKana = String(item.kana || "").trim();
+        kana = (!hasKanjiText(rawKana) && rawKana) ? rawKana : "";
+        verified = Boolean(kana);
+        if (!kana) {
+          const fallback = findFallbackKana(enrichedWords, surface);
+          if (fallback) {
+            kana = fallback.kana;
+            verified = fallback.verified;
+          }
         }
       }
       merged.push({
@@ -3021,13 +3078,16 @@ function applyAiLineToSongLine(songLine, aiLine) {
         kana,
         zh: String(item.zh || "").trim() || "",
         verified,
-        source: verified ? "ai" : "enriched"
+        source: verified ? (options.keepReadings ? (songLine.proofread ? "proofread" : "enriched") : "ai") : "enriched"
       });
       if (verified && kana) applied += 1;
     });
     if (merged.length) songLine.words = merged;
   }
   if (aiLine.zh && !songLine.zh) songLine.zh = String(aiLine.zh).trim();
+  if (aiLine.kana && !songLine.kana && !hasKanjiText(aiLine.kana)) {
+    songLine.kana = String(aiLine.kana).trim();
+  }
   const aiRomaji = String(aiLine.romaji || "").trim();
   if (aiRomaji && !hasKanjiText(aiRomaji) && !/[\u3040-\u30ff]/.test(aiRomaji)) {
     songLine.romaji = aiRomaji;
@@ -3080,7 +3140,7 @@ async function enrichSongWithAI(song, options = {}) {
     setStatus("正在联网获取官方注音参考…");
     context.reference = await Promise.race([
       fetchUtaTenReferenceLines(song),
-      new Promise(resolve => window.setTimeout(() => resolve([]), 12000))
+      new Promise(resolve => window.setTimeout(() => resolve([]), 20000))
     ]);
   }
   const batchSize = 1;
@@ -3088,6 +3148,7 @@ async function enrichSongWithAI(song, options = {}) {
   for (let i = 0; i < song.lines.length; i += batchSize) {
     batches.push(song.lines.slice(i, i + batchSize));
   }
+  const keepReadings = context.reference.length > 0;
   let linesOk = 0;
   let wordsApplied = 0;
   let failedBatches = 0;
@@ -3108,9 +3169,24 @@ async function enrichSongWithAI(song, options = {}) {
         const batch = batches[batchIndex];
         setStatus(`AI 解析第 ${batchIndex + 1}/${batches.length} 句…`);
         let content = null;
+        let lineKana = "";
         for (let attempt = 0; attempt < 2; attempt += 1) {
           try {
-            content = await callChatCompletions(config, buildAiLyricPrompt(batch, context), 60000);
+            if (keepReadings) {
+              content = await callChatCompletions(config, buildAiLyricPrompt(batch, context), 60000);
+            } else {
+              if (!lineKana) {
+                const kanaContent = await callChatCompletions(config, buildAiKanaPrompt(batch), 60000);
+                const kanaData = parseAiLyricResponse(kanaContent);
+                lineKana = kanaData && kanaData.lines && kanaData.lines[0] ? String(kanaData.lines[0].kana || "") : "";
+              }
+              const wordsContent = await callChatCompletions(config, buildAiWordsPrompt(batch, lineKana, context), 60000);
+              const wordsData = parseAiLyricResponse(wordsContent);
+              if (lineKana && wordsData && wordsData.lines && wordsData.lines[0]) {
+                wordsData.lines[0].kana = lineKana;
+              }
+              content = JSON.stringify(wordsData);
+            }
             break;
           } catch (error) {
             if (attempt === 0) {
@@ -3136,7 +3212,7 @@ async function enrichSongWithAI(song, options = {}) {
           data.lines.forEach(aiLine => {
             const lineIndex = batchIndex * batchSize + Number(aiLine.index || 0);
             if (lineIndex < 0 || lineIndex >= song.lines.length) return;
-            const applied = applyAiLineToSongLine(song.lines[lineIndex], aiLine);
+            const applied = applyAiLineToSongLine(song.lines[lineIndex], aiLine, { keepReadings });
             wordsApplied += applied;
             linesOk += 1;
             const line = song.lines[lineIndex];
@@ -3196,6 +3272,20 @@ async function enrichSongWithAI(song, options = {}) {
     };
   } finally {
     setBusy(false);
+  }
+}
+
+async function autoProcessSong(song, setStatus) {
+  if (!song || !song.lines || !song.lines.length) return;
+  if (!song.proofread && !utatenBlocked) {
+    setStatus("正在获取 utaten 官方注音…");
+    const utatenResult = await fetchUtaTenReadings(song);
+    if (utatenResult && utatenResult.error) {
+      setStatus(`${utatenResult.error}`);
+    }
+  }
+  if (getAiConfig()) {
+    await enrichSongWithAI(song, { onStatus: setStatus });
   }
 }
 
@@ -3280,7 +3370,7 @@ async function aiProofreadReadings(song, options = {}) {
   if (!context.reference.length) {
     context.reference = await Promise.race([
       fetchUtaTenReferenceLines(song),
-      new Promise(resolve => window.setTimeout(() => resolve([]), 12000))
+      new Promise(resolve => window.setTimeout(() => resolve([]), 20000))
     ]);
   }
   const pending = [];
@@ -3458,7 +3548,7 @@ async function handleSearchSong(index) {
     onDone: enriched => {
       status.textContent = `已解析《${song.title}》：${enriched.vocab.length} 个生词 · ${enriched.grammarPointIds.length} 个语法点`;
       toast(`已解析《${song.title}》，共 ${parsedLines.length} 句歌词`);
-      runAIAfterEnrich(activeSong, text => { status.textContent = text; });
+      autoProcessSong(activeSong, text => { status.textContent = text; });
     }
   });
 }
@@ -3475,7 +3565,7 @@ async function reparseCustomSong(id) {
     renderSync();
     renderSongs();
     toast(`已重新解析：${enriched.vocab.length} 个生词 · ${enriched.grammarPointIds.length} 个语法点`);
-    runAIAfterEnrich(song, text => toast(text));
+    autoProcessSong(song, text => toast(text));
   } else {
     toast("重新解析失败，请检查网络");
   }
