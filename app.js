@@ -2976,19 +2976,50 @@ function buildAiLyricPrompt(batch) {
       role: "system",
       content: "你是日语歌词学习助手。用户会给出若干行日语歌词，每行以 [序号] 开头。请对每一行输出：\n" +
         "1. zh：中文翻译（自然通顺）\n" +
-        "2. romaji：整句罗马音（按单词空格分隔）\n" +
-        "3. words：逐词拆解数组，元素为 {surface: 原词, kana: 读音假名, zh: 中文意思}。注意：\n" +
-        "   - 按歌词实际形态分词（保留送假名，如「忘れて」是一个词）\n" +
-        "   - 假名必须是该句语境读音（如 今日→きょう、一人→ひとり、分かった→わかった），不能给其他读音\n" +
-        "   - 助词如 は/を/に 可并入前词或单独列出均可\n" +
-        "4. grammar：该行出现的语法点数组，元素为 {pattern: 句型（如 〜てください）, title: 简短名称, explain: 中文讲解（1-2句）, example_ja: 一个例句, example_zh: 例句中文}。没有明显语法点可返回空数组。\n" +
+        "2. romaji：整句罗马音（只允许 a-z 字母和空格，按单词分隔；绝不允许出现汉字或假名）\n" +
+        "3. words：逐词拆解数组，元素为 {surface: 原词, kana: 读音假名, zh: 中文意思}。硬性要求：\n" +
+        "   - kana 必须是纯平假名（ひらがな），绝不允许出现汉字；无法确定读音时宁可不给出也不要写汉字\n" +
+        "   - 禁止把多个词合并成一个词。助词（は/を/に/が/と/で/も/の/だけ/ように 等）必须单独拆出或并入前面独立的实词之后，例如「沈むように」必须拆成 沈む 和 ように 两个词，「二人だけの」拆成 二人・だけ・の\n" +
+        "   - 假名必须是该句语境读音（如 今日→きょう、一人→ひとり、分かった→わかった、空→そら、日々→ひび）\n" +
+        "4. grammar：该行出现的语法点数组（每行至少列 1 个；没有明显语法点也列出 1 个最接近的），元素为 {pattern: 句型（如 〜ように、〜てゆく、〜だけ）, title: 简短名称, explain: 中文讲解（1-2句）, example_ja: 一个例句, example_zh: 例句中文}。\n" +
         "只输出一个 JSON 对象，格式：{\"lines\":[{\"index\":0,\"zh\":\"...\",\"romaji\":\"...\",\"words\":[{\"surface\":\"...\",\"kana\":\"...\",\"zh\":\"...\"}],\"grammar\":[{\"pattern\":\"...\",\"title\":\"...\",\"explain\":\"...\",\"example_ja\":\"...\",\"example_zh\":\"...\"}]}]}。不要输出任何其他文字。"
     },
     { role: "user", content: lines }
   ];
 }
 
+function hasKanjiText(text) {
+  return /[\u3400-\u9fff]/.test(text || "");
+}
+
+function findFallbackKana(enrichedWords, surface) {
+  if (!enrichedWords || !enrichedWords.length) return null;
+  for (let i = 0; i < enrichedWords.length; i += 1) {
+    const first = enrichedWords[i];
+    if (first.surface === surface) {
+      return first.kana ? { kana: first.kana, verified: Boolean(first.verified) } : null;
+    }
+    if (!surface.startsWith(first.surface)) continue;
+    let acc = first.surface;
+    let kanaAcc = first.kana || "";
+    let allHave = Boolean(first.kana);
+    for (let j = i + 1; j < enrichedWords.length; j += 1) {
+      const next = enrichedWords[j];
+      acc += next.surface;
+      kanaAcc += next.kana || "";
+      allHave = allHave && Boolean(next.kana);
+      if (acc === surface) {
+        if (allHave && kanaAcc && !hasKanjiText(kanaAcc)) return { kana: kanaAcc, verified: true };
+        return null;
+      }
+      if (acc.length > surface.length) break;
+    }
+  }
+  return null;
+}
+
 function applyAiLineToSongLine(songLine, aiLine) {
+  const enrichedWords = songLine.words || [];
   let applied = 0;
   if (Array.isArray(aiLine.words) && aiLine.words.length) {
     const merged = [];
@@ -2998,20 +3029,31 @@ function applyAiLineToSongLine(songLine, aiLine) {
       if (!surface) return;
       if (seen.has(surface)) return;
       seen.add(surface);
+      const rawKana = String(item.kana || "").trim();
+      let kana = (!hasKanjiText(rawKana) && rawKana) ? rawKana : "";
+      let verified = Boolean(kana);
+      if (!kana) {
+        const fallback = findFallbackKana(enrichedWords, surface);
+        if (fallback) {
+          kana = fallback.kana;
+          verified = fallback.verified;
+        }
+      }
       merged.push({
         surface,
-        kana: String(item.kana || "").trim() || surface,
+        kana,
         zh: String(item.zh || "").trim() || "",
-        verified: true,
-        source: "ai"
+        verified,
+        source: verified ? "ai" : "enriched"
       });
-      applied += 1;
+      if (verified && kana) applied += 1;
     });
     if (merged.length) songLine.words = merged;
   }
   if (aiLine.zh && !songLine.zh) songLine.zh = String(aiLine.zh).trim();
-  if (aiLine.romaji) {
-    songLine.romaji = String(aiLine.romaji).trim();
+  const aiRomaji = String(aiLine.romaji || "").trim();
+  if (aiRomaji && !hasKanjiText(aiRomaji) && !/[\u3040-\u30ff]/.test(aiRomaji)) {
+    songLine.romaji = aiRomaji;
     songLine.romajiFrom = "ai";
   }
   if (Array.isArray(aiLine.grammar) && aiLine.grammar.length) {
@@ -3023,7 +3065,7 @@ function applyAiLineToSongLine(songLine, aiLine) {
         example_ja: String(item.example_ja || "").trim(),
         example_zh: String(item.example_zh || "").trim()
       }))
-      .filter(item => item.pattern);
+      .filter(item => item.pattern && !hasKanjiText(item.pattern));
   }
   return applied;
 }
@@ -3084,6 +3126,15 @@ async function enrichSongWithAI(song, options = {}) {
         wordsApplied += applied;
         linesOk += 1;
       });
+    });
+    song.lines.forEach(line => {
+      if (!line.romaji && line.words && line.words.length) {
+        const romaji = buildLineRomaji(line);
+        if (romaji) {
+          line.romaji = romaji;
+          if (!line.romajiFrom) line.romajiFrom = "auto";
+        }
+      }
     });
     if (linesOk) {
       const grammarMap = new Map();
