@@ -58,226 +58,6 @@ const PLAN_TEMPLATES = [
   { day: 29, title: "模拟旅行日", theme: "综合 · 模拟", minutes: 60, media: "全程日语挑战", tasks: ["早上 8 点起只说日语 30 分钟", "完成：早餐→乘车→买票→问路", "晚上把卡住的地方记下来补练"] },
   { day: 30, title: "心态与检查单", theme: "出发 · 收尾", minutes: 30, media: "再听一遍最喜欢的歌", tasks: ["复习 10 个最高频生存句", "把单词卡剩余词快速过一遍", "打印或截图短语手册，准备出发"] }
 ];
-
-const SONGS = [
-  {
-    id: "lemon",
-    title: "Lemon",
-    artist: "米津玄師",
-    search: "米津玄師 Lemon",
-    neteaseId: 536622304,
-    lyric: "夢ならばどれほどよかったでしょう。",
-    romaji: "Yume naraba dorehodo yokatta deshou.",
-    zh: "如果这只是一场梦，该有多好。",
-    lines: [
-      {
-        ja: "夢ならばどれほどよかったでしょう。",
-        romaji: "Yume naraba dorehodo yokatta deshou.",
-        zh: "如果这只是一场梦，该有多好。",
-        words: [
-          { surface: "夢", kana: "ゆめ", zh: "梦" },
-          { surface: "ならば", kana: "ならば", zh: "如果是…的话" },
-          { surface: "よかった", kana: "よかった", zh: "太好了（过去式）" }
-        ]
-      },
-      {
-        ja: "未だにあなたのことを夢にみる。",
-        romaji: "Imada ni anata no koto o yume ni miru.",
-        zh: "至今，我仍会在梦里见到你。",
-        words: [
-          { surface: "未だに", kana: "いまだに", zh: "至今仍然" },
-          { surface: "あなた", kana: "あなた", zh: "你" },
-          { surface: "夢にみる", kana: "ゆめにみる", zh: "在梦中看到" }
-        ]
-      }
-    ],
-    vocab: [
-      { ja: "夢", kana: "ゆめ", zh: "梦" },
-      { ja: "ならば", kana: "ならば", zh: "如果是…的话" },
-      { ja: "よかった", kana: "よかった", zh: "（いい 的过去式）曾很好" }
-    ],
-    grammar: "〜ならば 表示假设；よかった 是 いい 的过去式，和 どれほど 搭配时表达“要是…该多好”的感叹。",
-    grammarPointIds: ["naraba", "yokatta"],
-    quizLine: "____ならばどれほどよかったでしょう。",
-    options: ["夢", "雨", "雲", "海"],
-    answer: "夢"
-  },
-  {
-    id: "hanabi",
-    title: "打上花火",
-    artist: "DAOKO × 米津玄師",
-    search: "DAOKO 打上花火",
-    neteaseId: 496869422,
-    lyric: "あの日見渡した渚を 今も思い出すんだ。",
-    romaji: "Ano hi miwatashita nagisa o ima mo omoidasu nda.",
-    zh: "那一天眺望过的海滨，直到现在还会想起。",
-    lines: [
-      {
-        ja: "あの日見渡した渚を 今も思い出すんだ。",
-        romaji: "Ano hi miwatashita nagisa o ima mo omoidasu nda.",
-        zh: "那一天眺望过的海滨，直到现在还会想起。",
-        words: [
-          { surface: "あの日", kana: "あのひ", zh: "那一天" },
-          { surface: "見渡した", kana: "みわたした", zh: "眺望过" },
-          { surface: "渚", kana: "なぎさ", zh: "海滨" },
-          { surface: "思い出す", kana: "おもいだす", zh: "想起" }
-        ]
-      }
-    ],
-    vocab: [
-      { ja: "あの日", kana: "あのひ", zh: "那一天" },
-      { ja: "見渡した", kana: "みわたした", zh: "眺望、环视" },
-      { ja: "思い出す", kana: "おもいだす", zh: "想起" }
-    ],
-    grammar: "見渡した 是过去式，修饰 渚；今も思い出すんだ 的 んだ 给句子加上说明、感叹的语气。",
-    grammarPointIds: ["past-modifier", "nda"],
-    quizLine: "あの日____渚を 今も思い出すんだ。",
-    options: ["見渡した", "歩いた", "歌った", "描いた"],
-    answer: "見渡した"
-  },
-  {
-    id: "yoru",
-    title: "夜に駆ける",
-    artist: "YOASOBI",
-    search: "YOASOBI 夜に駆ける",
-    neteaseId: 1409311773,
-    lyric: "沈むように溶けてゆくように。",
-    romaji: "Shizumu you ni tokete yuku you ni.",
-    zh: "像要沉没一样，像要融化一样。",
-    lines: [
-      {
-        ja: "沈むように溶けてゆくように。",
-        romaji: "Shizumu you ni tokete yuku you ni.",
-        zh: "像要沉没一样，像要融化一样。",
-        words: [
-          { surface: "沈む", kana: "しずむ", zh: "下沉" },
-          { surface: "ように", kana: "ように", zh: "像…一样" },
-          { surface: "溶けてゆく", kana: "とけてゆく", zh: "逐渐融化" }
-        ]
-      }
-    ],
-    vocab: [
-      { ja: "沈む", kana: "しずむ", zh: "下沉" },
-      { ja: "溶ける", kana: "とける", zh: "融化" },
-      { ja: "ように", kana: "ように", zh: "像…一样" }
-    ],
-    grammar: "ように 表示比喻“像…那样”，-てゆく 表示动作逐渐、持续地发展。",
-    grammarPointIds: ["youni", "teyuku"],
-    quizLine: "____ように溶けてゆくように。",
-    options: ["沈む", "飛ぶ", "泣く", "走る"],
-    answer: "沈む"
-  },
-  {
-    id: "idol",
-    title: "アイドル",
-    artist: "YOASOBI",
-    search: "YOASOBI アイドル",
-    neteaseId: null,
-    lyric: "君は完璧で究極のアイドル。",
-    romaji: "Kimi wa kanpeki de kyuukyoku no aidoru.",
-    zh: "你是完美又终极的偶像。",
-    lines: [
-      {
-        ja: "君は完璧で究極のアイドル。",
-        romaji: "Kimi wa kanpeki de kyuukyoku no aidoru.",
-        zh: "你是完美又终极的偶像。",
-        words: [
-          { surface: "君", kana: "きみ", zh: "你" },
-          { surface: "完璧", kana: "かんぺき", zh: "完美" },
-          { surface: "究極", kana: "きゅうきょく", zh: "终极" }
-        ]
-      },
-      {
-        ja: "その笑顔でみんなを虜にしていく。",
-        romaji: "Sono egao de minna o toriko ni shite iku.",
-        zh: "你用那笑容，让所有人都逐渐着迷。",
-        words: [
-          { surface: "その", kana: "その", zh: "那个" },
-          { surface: "笑顔", kana: "えがお", zh: "笑容" },
-          { surface: "虜", kana: "とりこ", zh: "俘虏、着迷的人" }
-        ]
-      }
-    ],
-    vocab: [
-      { ja: "君", kana: "きみ", zh: "你" },
-      { ja: "完璧", kana: "かんぺき", zh: "完美" },
-      { ja: "究極", kana: "きゅうきょく", zh: "终极" }
-    ],
-    grammar: "〜は 提示主题；で 在这里连接两个形容词性名词，后面的 の 把整段变成名词修饰语。",
-    grammarPointIds: ["de-connection", "no-modifier"],
-    quizLine: "君は____で究極のアイドル。",
-    options: ["完璧", "天才", "最高", "最強"],
-    answer: "完璧"
-  },
-  {
-    id: "pretender",
-    title: "Pretender",
-    artist: "Official髭男dism",
-    search: "Official髭男dism Pretender",
-    neteaseId: 1365924378,
-    lyric: "君のいない世界にも慣れたはずなのに。",
-    romaji: "Kimi no inai sekai ni mo nareta hazu na noni.",
-    zh: "明明应该已经习惯了没有你的世界。",
-    lines: [
-      {
-        ja: "君のいない世界にも慣れたはずなのに。",
-        romaji: "Kimi no inai sekai ni mo nareta hazu na noni.",
-        zh: "明明应该已经习惯了没有你的世界。",
-        words: [
-          { surface: "いない", kana: "いない", zh: "不存在" },
-          { surface: "世界", kana: "せかい", zh: "世界" },
-          { surface: "慣れた", kana: "なれた", zh: "习惯了" },
-          { surface: "はず", kana: "はず", zh: "应该" },
-          { surface: "のに", kana: "のに", zh: "明明…却" }
-        ]
-      }
-    ],
-    vocab: [
-      { ja: "いない", kana: "いない", zh: "不在" },
-      { ja: "慣れた", kana: "なれた", zh: "习惯了" },
-      { ja: "のに", kana: "のに", zh: "明明…却" }
-    ],
-    grammar: "はず 表示按道理推测；のに 表示“明明…却”，带遗憾或意外的语气。",
-    grammarPointIds: ["hazu", "noni"],
-    quizLine: "君のいない世界にも慣れた____なのに。",
-    options: ["はず", "つもり", "ため", "まま"],
-    answer: "はず"
-  },
-  {
-    id: "gunjo",
-    title: "群青",
-    artist: "YOASOBI",
-    search: "YOASOBI 群青",
-    neteaseId: 1472480890,
-    lyric: "あの日踏み出した一歩が、今の僕を作っている。",
-    romaji: "Ano hi fumidashita ippo ga, ima no boku o tsukutte iru.",
-    zh: "那一天迈出的一步，构成了现在的我。",
-    lines: [
-      {
-        ja: "あの日踏み出した一歩が、今の僕を作っている。",
-        romaji: "Ano hi fumidashita ippo ga, ima no boku o tsukutte iru.",
-        zh: "那一天迈出的一步，构成了现在的我。",
-        words: [
-          { surface: "踏み出した", kana: "ふみだした", zh: "迈出了" },
-          { surface: "一歩", kana: "いっぽ", zh: "一步" },
-          { surface: "今の僕", kana: "いまのぼく", zh: "现在的我" },
-          { surface: "作っている", kana: "つくっている", zh: "正在创造" }
-        ]
-      }
-    ],
-    vocab: [
-      { ja: "踏み出した", kana: "ふみだした", zh: "迈出" },
-      { ja: "一歩", kana: "いっぽ", zh: "一步" },
-      { ja: "作っている", kana: "つくっている", zh: "正在创造" }
-    ],
-    grammar: "踏み出した 是过去式，修饰 一歩；作っている 用 ている 表示状态的持续或当前进行。",
-    grammarPointIds: ["past-modifier", "iru-continuation"],
-    quizLine: "あの日____一歩が、今の僕を作っている。",
-    options: ["踏み出した", "忘れた", "止めた", "壊した"],
-    answer: "踏み出した"
-  }
-];
-
 const GRAMMAR_POINTS = [
   {
     id: "naraba",
@@ -1569,18 +1349,33 @@ function renderDashboard() {
   $("#statKana").textContent = state.kanaStats.best;
   $("#statKanaSub").textContent = `共答对 ${state.kanaStats.correct} 题`;
 
-  const media = index % 2 === 0 ? SONGS[index % SONGS.length] : ANIME_SCENES[index % ANIME_SCENES.length];
-  const isSong = Boolean(media.lyric);
-  $("#todayMedia").innerHTML = `
-    <div class="media-body">
-      <span class="media-disc">${isSong ? "♪" : "語"}</span>
-      <div class="media-meta">
-        <span class="kicker">${isSong ? "歌曲" : "动漫"} · ${isSong ? media.artist : media.show}</span>
-        <h4>${media.title}</h4>
-        <p>${isSong ? media.lyric : media.line} —— ${media.zh}</p>
-        <button class="speak-btn speak-inline" data-speak="${isSong ? media.lyric : media.line}">听发音</button>
-      </div>
-    </div>`;
+  const customSongs = state.customSongs;
+  const showSong = customSongs.length > 0 && index % 2 === 0;
+  const media = showSong ? customSongs[index % customSongs.length] : ANIME_SCENES[index % ANIME_SCENES.length];
+  const isSong = Boolean(media && media.lyric);
+  if (!media) {
+    $("#todayMedia").innerHTML = `
+      <div class="media-body">
+        <span class="media-disc">♪</span>
+        <div class="media-meta">
+          <span class="kicker">歌曲</span>
+          <h4>还没有导入歌曲</h4>
+          <p>去「导入」页搜索或粘贴一首日语歌，马上开始学习。</p>
+          <button class="speak-btn speak-inline" data-jump="sync">去导入</button>
+        </div>
+      </div>`;
+  } else {
+    $("#todayMedia").innerHTML = `
+      <div class="media-body">
+        <span class="media-disc">${isSong ? "♪" : "語"}</span>
+        <div class="media-meta">
+          <span class="kicker">${isSong ? "歌曲" : "动漫"} · ${isSong ? media.artist : media.show}</span>
+          <h4>${escapeHtml(media.title)}</h4>
+          <p>${isSong ? escapeHtml(media.lyric || (media.lines && media.lines[0] ? media.lines[0].ja : "")) : escapeHtml(media.line)} —— ${escapeHtml(media.zh)}</p>
+          <button class="speak-btn speak-inline" data-speak="${isSong ? (media.lyric || (media.lines && media.lines[0] ? media.lines[0].ja : "")) : media.line}">听发音</button>
+        </div>
+      </div>`;
+  }
 
   const phrase = PHRASES[(index * 3 + 4) % PHRASES.length];
   $("#dailyPhrase").innerHTML = `
@@ -1781,15 +1576,26 @@ function renderActiveLyricLine() {
 }
 
 function renderSongs() {
-  const allSongs = [...SONGS, ...state.customSongs];
+  const allSongs = state.customSongs;
+  if (!allSongs.length) {
+    activeSong = null;
+    $("#songGrid").innerHTML = `
+      <div class="empty-state">
+        <p class="empty-title">还没有歌曲</p>
+        <p class="empty-sub">去「导入」页搜索或粘贴一首日语歌，马上开始学习。</p>
+        <button class="primary-btn" data-jump="sync">去导入歌曲</button>
+      </div>`;
+    renderSongLesson();
+    return;
+  }
   if (!activeSong || !allSongs.some(song => song.id === activeSong.id)) {
-    activeSong = SONGS[0];
+    activeSong = allSongs[0];
     lyricIndex = 0;
   }
   $("#songGrid").innerHTML = allSongs.map(song => `
     <button class="media-card ${activeSong.id === song.id ? "active" : ""}" data-song-id="${song.id}">
       <div class="card-top">
-        <span class="card-type">${song.isCustom ? "我的导入" : "J-POP"}</span>
+        <span class="card-type">我的导入</span>
         <span class="card-icon">♪</span>
       </div>
       <h3>${escapeHtml(song.title)}</h3>
@@ -1807,7 +1613,6 @@ function renderGrammar() {
     <article class="grammar-card" data-grammar-id="${point.id}">
       <div class="grammar-head">
         <span class="level-badge">${point.level}</span>
-        <span class="song-source">出自 ${point.song}</span>
       </div>
       <h3><span class="pattern">${point.pattern}</span>${point.title}</h3>
       <p class="grammar-explain">${point.explain}</p>
@@ -1820,7 +1625,6 @@ function renderGrammar() {
           </div>
         `).join("")}
       </div>
-      ${point.songId ? `<button class="ghost-btn grammar-song-link" data-song-target="${point.songId}">去歌词里再看一遍</button>` : ""}
     </article>
   `).join("");
 }
@@ -1846,18 +1650,6 @@ function normalizeTrackName(value) {
   return String(value || "").toLowerCase().replace(/[\s・·×\u3000]/g, "");
 }
 
-function findBuiltInSong(track) {
-  const title = normalizeTrackName(track.title);
-  const artist = normalizeTrackName(track.artist);
-  return SONGS.find(song => {
-    const songTitle = normalizeTrackName(song.title);
-    const songArtist = normalizeTrackName(song.artist);
-    const titleMatch = title.includes(songTitle) || songTitle.includes(title);
-    const artistMatch = !songArtist || artist.includes(songArtist) || songArtist.includes(artist);
-    return titleMatch && artistMatch;
-  });
-}
-
 function renderSyncTracks() {
   const container = $("#syncResults");
   if (!lastSyncedTracks.length) {
@@ -1872,7 +1664,6 @@ function renderSyncTracks() {
       <small>${lastSyncedTracks.length} 首歌曲</small>
     </div>
     ${lastSyncedTracks.map((track, index) => {
-      const builtIn = findBuiltInSong(track);
       const japanese = isJapaneseText(`${track.title} ${track.artist}`);
       return `
         <div class="sync-track">
@@ -1881,12 +1672,12 @@ function renderSyncTracks() {
             <p>${escapeHtml(track.artist || "未知歌手")}</p>
             <div class="track-tags">
               ${japanese ? `<span class="track-tag">日语歌</span>` : ""}
-              ${builtIn ? `<span class="track-tag match">曲库已有</span>` : `<span class="track-tag">需要导入</span>`}
+              <span class="track-tag">需要导入</span>
             </div>
           </div>
           <div class="track-actions">
-            ${builtIn ? `<button class="primary-btn" data-song-target="${builtIn.id}">学习</button>` : `<button class="secondary-btn" data-queue-track="${index}">加入学习列表</button>`}
-            ${!builtIn && track.id ? `<button class="ghost-btn" data-fetch-lyrics="${index}">获取歌词</button>` : ""}
+            <button class="secondary-btn" data-queue-track="${index}">加入学习列表</button>
+            ${track.id ? `<button class="ghost-btn" data-fetch-lyrics="${index}">获取歌词</button>` : ""}
             ${track.id ? `<button class="ghost-btn" data-netease-open="${track.id}">网易云</button>` : ""}
           </div>
         </div>
@@ -1975,14 +1766,6 @@ function importSongListText() {
 function addTrackToCustom(index) {
   const track = lastSyncedTracks[index];
   if (!track) return;
-  const builtIn = findBuiltInSong(track);
-  if (builtIn) {
-    activeSong = builtIn;
-    lyricIndex = 0;
-    switchView("songs");
-    renderSongs();
-    return;
-  }
   if (state.customSongs.some(song => song.title === track.title && song.artist === track.artist)) {
     toast("这首歌已经在学习列表里");
     return;
@@ -2941,7 +2724,7 @@ async function callChatCompletions(config, messages, timeoutMs = 90000) {
       model: config.model,
       messages,
       temperature: 0.3,
-      max_tokens: 8000
+      max_tokens: 1500
     })
   });
   if (!response.ok) {
@@ -3075,7 +2858,7 @@ async function enrichSongWithAI(song, options = {}) {
   if (!config) return { error: "未配置 AI，请先到导入页设置 API Key" };
   if (!song || !song.lines || !song.lines.length) return { error: "这首歌还没有歌词" };
   const setStatus = options.onStatus || (() => {});
-  const batchSize = 15;
+  const batchSize = 1;
   const batches = [];
   for (let i = 0; i < song.lines.length; i += batchSize) {
     batches.push(song.lines.slice(i, i + batchSize));
@@ -3091,15 +2874,15 @@ async function enrichSongWithAI(song, options = {}) {
       while (cursor < batches.length) {
         const batchIndex = cursor++;
         const batch = batches[batchIndex];
-        setStatus(`AI 解析第 ${batchIndex + 1}/${batches.length} 批…`);
+        setStatus(`AI 解析第 ${batchIndex + 1}/${batches.length} 句…`);
         let content = null;
         for (let attempt = 0; attempt < 2; attempt += 1) {
           try {
-            content = await callChatCompletions(config, buildAiLyricPrompt(batch));
+            content = await callChatCompletions(config, buildAiLyricPrompt(batch), 60000);
             break;
           } catch (error) {
             if (attempt === 0) {
-              setStatus(`AI 第 ${batchIndex + 1} 批重试中…`);
+              setStatus(`AI 第 ${batchIndex + 1} 句重试中…`);
             }
           }
         }
@@ -3171,7 +2954,7 @@ async function runAIAfterEnrich(song, setStatus) {
   if (result.error) {
     setStatus(`AI 解析未执行：${result.error}`);
   } else {
-    const stats = `AI 解析完成：${result.linesOk} 行 · ${result.wordsApplied} 个词${result.failedBatches ? ` · ${result.failedBatches} 批失败` : ""}`;
+    const stats = `AI 解析完成：${result.linesOk} 行 · ${result.wordsApplied} 个词${result.failedBatches ? ` · ${result.failedBatches} 句失败` : ""}`;
     setStatus(stats);
     toast(`AI 解析完成（${result.source}）`);
   }
@@ -3621,7 +3404,7 @@ document.addEventListener("click", event => {
 
   const songTargetButton = event.target.closest("[data-song-target]");
   if (songTargetButton) {
-    const target = SONGS.find(song => song.id === songTargetButton.dataset.songTarget);
+    const target = state.customSongs.find(song => song.id === songTargetButton.dataset.songTarget);
     if (target) {
       activeSong = target;
       lyricIndex = 0;
@@ -3720,7 +3503,7 @@ document.addEventListener("click", event => {
 
   const songCard = event.target.closest("[data-song-id]");
   if (songCard) {
-    activeSong = [...SONGS, ...state.customSongs].find(song => song.id === songCard.dataset.songId) || activeSong;
+    activeSong = state.customSongs.find(song => song.id === songCard.dataset.songId) || activeSong;
     lyricIndex = 0;
     renderSongs();
     return;
@@ -3907,7 +3690,7 @@ $("#aiParseSong").addEventListener("click", async () => {
     toast(result.error);
     return;
   }
-  status.textContent = `AI 解析完成：${result.linesOk} 行 · ${result.wordsApplied} 个词${result.failedBatches ? ` · ${result.failedBatches} 批失败` : ""}`;
+  status.textContent = `AI 解析完成：${result.linesOk} 行 · ${result.wordsApplied} 个词${result.failedBatches ? ` · ${result.failedBatches} 句失败` : ""}`;
   toast(`AI 解析完成（${result.source}）`);
 });
 

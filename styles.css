@@ -751,6 +751,18 @@ main {
   text-align: center;
 }
 
+.empty-state .empty-title {
+  margin: 0 0 6px;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.empty-state .empty-sub {
+  margin: 0 0 16px;
+  font-size: 14px;
+}
+
 .complete-btn {
   min-height: 34px;
   padding: 0 13px;
@@ -1333,12 +1345,6 @@ button.word-chip:hover {
   font-weight: 800;
 }
 
-.song-source {
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 700;
-}
-
 .grammar-card h3 {
   margin: 0 0 9px;
   font-size: 21px;
@@ -1348,11 +1354,6 @@ button.word-chip:hover {
   margin: 0 0 14px;
   color: var(--muted);
   font-size: 14px;
-}
-
-.grammar-song-link {
-  width: 100%;
-  margin-top: 14px;
 }
 
 .sync-grid {
