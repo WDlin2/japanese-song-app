@@ -2815,9 +2815,7 @@ function extractUtaTenLyric(html) {
 
 async function runUtaTenFetch(song, setStatus) {
   setStatus(`正在 utaten 搜索《${song.title}》…`);
-  const searchUrl = `https://utaten.com/search?title=${encodeURIComponent(song.title)}&artist_name=${encodeURIComponent(song.artist || "")}`;
-  const searchHtml = await fetchHtmlViaChain(searchUrl);
-  const results = extractUtaTenResults(searchHtml);
+  const results = await searchUtaTen(song.title, song.artist);
   if (!results.length) {
     return { error: "utaten 上没有搜到这首歌，可尝试手动粘贴注音" };
   }
@@ -3107,13 +3105,24 @@ function applyAiLineToSongLine(songLine, aiLine, options = {}) {
   return applied;
 }
 
+async function searchUtaTen(title, artist) {
+  const artistQuery = artist ? `&artist_name=${encodeURIComponent(artist)}` : "";
+  const firstUrl = `https://utaten.com/search?title=${encodeURIComponent(title)}${artistQuery}`;
+  let html = await fetchHtmlViaChain(firstUrl);
+  let results = extractUtaTenResults(html);
+  if (!results.length && artist) {
+    const retryUrl = `https://utaten.com/search?title=${encodeURIComponent(title)}`;
+    html = await fetchHtmlViaChain(retryUrl);
+    results = extractUtaTenResults(html);
+  }
+  return results;
+}
+
 async function fetchUtaTenReferenceLines(song) {
   if (song.utatenReference && song.utatenReference.length) return song.utatenReference;
   if (!song || !song.title) return [];
   try {
-    const searchUrl = `https://utaten.com/search?title=${encodeURIComponent(song.title)}&artist_name=${encodeURIComponent(song.artist || "")}`;
-    const searchHtml = await fetchHtmlViaChain(searchUrl);
-    const results = extractUtaTenResults(searchHtml);
+    const results = await searchUtaTen(song.title, song.artist);
     const best = results.length ? pickBestUtaTenResult(results, song) : null;
     if (!best) return [];
     const lyricHtml = await fetchHtmlViaChain(`https://utaten.com/lyric/${best.id}/`);
