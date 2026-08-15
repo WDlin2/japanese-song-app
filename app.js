@@ -1672,6 +1672,7 @@ function renderSongLesson() {
     `}
   `;
   renderActiveLyricLine();
+  maybeAutoFetchUtaTen();
 }
 
 function renderActiveLyricLine() {
@@ -2631,10 +2632,15 @@ function parseFuriganaLine(text) {
   return { plain, runs, norm: normalizeLyric(plain) };
 }
 
-function applyProofreadToSong(song, pastedText) {
-  const pasted = String(pastedText || "").split("\n")
-    .map(line => parseFuriganaLine(line))
-    .filter(line => line.norm && line.runs.length);
+function applyProofreadToSong(song, pastedText, romajiLines) {
+  const allLines = String(pastedText || "").split("\n").map(line => parseFuriganaLine(line));
+  const pasted = [];
+  const romajiMap = [];
+  allLines.forEach((line, index) => {
+    if (!line.norm) return;
+    pasted.push(line);
+    romajiMap.push(romajiLines && romajiLines[index] ? romajiLines[index] : null);
+  });
   if (!pasted.length) {
     return { matchedLines: 0, appliedWords: 0, skippedLines: 0, error: "没有识别到 漢字(かな) 格式的注音，请检查粘贴内容" };
   }
@@ -2658,52 +2664,61 @@ function applyProofreadToSong(song, pastedText) {
     }
     matchedLines += 1;
     songLine.proofread = true;
+    const hitIndex = pasted.indexOf(hit);
+    const utatenRomaji = romajiMap[hitIndex];
     const { plain: rawPlain, runs } = hit;
-    songLine.words.forEach(word => {
-      if (FUNCTION_WORDS.has(word.surface)) {
-        word.kana = word.surface;
-        word.verified = true;
-        word.source = "kana";
-        return;
-      }
-      const start = rawPlain.indexOf(word.surface);
-      if (start < 0) return;
-      const end = start + word.surface.length;
-      const fullRun = runs.find(run => run.start <= start && run.end >= end);
-      if (fullRun) {
-        word.kana = fullRun.kana;
-        word.verified = true;
-        word.source = "proofread";
-        appliedWords += 1;
-        return;
-      }
-      const headRun = runs.find(run => run.start <= start && run.end > start);
-      if (headRun && headRun.end < end) {
-        const rest = word.surface.slice(headRun.end - start);
-        if (rest && !/[\u3400-\u9fff]/.test(rest)) {
-          word.kana = headRun.kana.endsWith(rest) ? headRun.kana : headRun.kana + rest;
+    if (runs.length) {
+      songLine.words.forEach(word => {
+        if (FUNCTION_WORDS.has(word.surface)) {
+          word.kana = word.surface;
+          word.verified = true;
+          word.source = "kana";
+          return;
+        }
+        const start = rawPlain.indexOf(word.surface);
+        if (start < 0) return;
+        const end = start + word.surface.length;
+        const fullRun = runs.find(run => run.start <= start && run.end >= end);
+        if (fullRun) {
+          word.kana = fullRun.kana;
           word.verified = true;
           word.source = "proofread";
           appliedWords += 1;
+          return;
         }
+        const headRun = runs.find(run => run.start <= start && run.end > start);
+        if (headRun && headRun.end < end) {
+          const rest = word.surface.slice(headRun.end - start);
+          if (rest && !/[\u3400-\u9fff]/.test(rest)) {
+            word.kana = headRun.kana.endsWith(rest) ? headRun.kana : headRun.kana + rest;
+            word.verified = true;
+            word.source = "proofread";
+            appliedWords += 1;
+          }
+        }
+      });
+    }
+    if (utatenRomaji) {
+      songLine.romaji = utatenRomaji;
+      songLine.romajiFrom = "utaten";
+    } else if (runs.length) {
+      let lineKana = "";
+      let cursor = 0;
+      runs.forEach(run => {
+        lineKana += rawPlain.slice(cursor, run.start);
+        lineKana += run.kana;
+        cursor = run.end;
+      });
+      lineKana += rawPlain.slice(cursor);
+      if (!/[\u3400-\u9fff]/.test(lineKana)) {
+        songLine.kana = lineKana;
+        const nonFunction = songLine.words.filter(word => !FUNCTION_WORDS.has(word.surface));
+        const wordsRomaji = nonFunction.length && nonFunction.every(word => word.kana)
+          ? songLine.words.map(word => kanaToRomaji(word.kana || "")).filter(Boolean).join(" ")
+          : kanaToRomaji(lineKana);
+        songLine.romaji = wordsRomaji;
+        songLine.romajiFrom = "proofread";
       }
-    });
-    let lineKana = "";
-    let cursor = 0;
-    runs.forEach(run => {
-      lineKana += rawPlain.slice(cursor, run.start);
-      lineKana += run.kana;
-      cursor = run.end;
-    });
-    lineKana += rawPlain.slice(cursor);
-    if (!/[\u3400-\u9fff]/.test(lineKana)) {
-      songLine.kana = lineKana;
-      const nonFunction = songLine.words.filter(word => !FUNCTION_WORDS.has(word.surface));
-      const wordsRomaji = nonFunction.length && nonFunction.every(word => word.kana)
-        ? songLine.words.map(word => kanaToRomaji(word.kana || "")).filter(Boolean).join(" ")
-        : kanaToRomaji(lineKana);
-      songLine.romaji = wordsRomaji;
-      songLine.romajiFrom = "proofread";
     }
   });
   if (matchedLines) {
@@ -2711,6 +2726,156 @@ function applyProofreadToSong(song, pastedText) {
     syncVocabFromLines(song);
   }
   return { matchedLines, appliedWords, skippedLines };
+}
+
+async function fetchHtmlViaChain(target) {
+  try {
+    const direct = await fetchWithTimeout(target, 8000);
+    if (direct.ok) {
+      const text = await direct.text();
+      if (text && text.length > 2000) return text;
+    }
+  } catch (error) {
+    // CORS 或网络错误，走代理
+  }
+  const proxies = [
+    { url: encoded => `https://api.allorigins.win/raw?url=${encoded}`, mode: "raw" },
+    { url: encoded => `https://api.allorigins.win/get?url=${encoded}`, mode: "get" },
+    { url: encoded => `https://api.codetabs.com/v1/proxy?quest=${encoded}`, mode: "raw" }
+  ];
+  for (const proxy of proxies) {
+    try {
+      const encoded = encodeURIComponent(target);
+      const response = await fetchWithTimeout(proxy.url(encoded), 30000);
+      const text = await response.text();
+      if (proxy.mode === "get") {
+        try {
+          const parsed = JSON.parse(text);
+          if (parsed && parsed.contents && parsed.contents.length > 2000) return parsed.contents;
+        } catch (error) {
+          // 继续下一个代理
+        }
+      } else if (text && text.length > 2000 && !/captcha|cloudflare|Just a moment|アクセスが集中/i.test(text)) {
+        return text;
+      }
+    } catch (error) {
+      // 继续下一个代理
+    }
+  }
+  return "";
+}
+
+function extractUtaTenResults(html) {
+  const results = [];
+  const blocks = String(html || "").match(/<article class="list__item">[\s\S]*?<\/article>/g) || [];
+  blocks.forEach(block => {
+    const linkMatch = block.match(/href="\/lyric\/([a-z0-9]+)\/"/);
+    const titleMatch = block.match(/class="list__link">\s*([^<]+?)\s*<\/span>/);
+    if (!linkMatch || !titleMatch) return;
+    const bodyMatch = block.match(/class="list__body">([\s\S]*?)<\/div>/);
+    let artist = bodyMatch ? bodyMatch[1].replace(/<[^>]+>/g, " ") : "";
+    artist = artist.split(/\s*(?:作詞|作曲)/)[0].trim();
+    results.push({ id: linkMatch[1], title: titleMatch[1].trim(), artist });
+  });
+  return results;
+}
+
+function pickBestUtaTenResult(results, song) {
+  const songTitle = normalizeTrackName(song.title);
+  const songArtist = normalizeTrackName(song.artist || "");
+  let best = null;
+  let bestScore = 0;
+  results.forEach(result => {
+    const title = normalizeTrackName(result.title);
+    let score = 0;
+    if (title === songTitle) score += 100;
+    else if (title.includes(songTitle) || songTitle.includes(title)) score += 60;
+    if (songArtist) {
+      const artist = normalizeTrackName(result.artist);
+      if (artist === songArtist) score += 30;
+      else if (artist.includes(songArtist) || songArtist.includes(artist)) score += 15;
+    }
+    if (score > bestScore) {
+      bestScore = score;
+      best = result;
+    }
+  });
+  return bestScore >= 60 ? best : null;
+}
+
+function extractUtaTenLyric(html) {
+  const source = String(html || "");
+  const furiganaLines = [];
+  const romajiLines = [];
+  const rubyPattern = /<span class="ruby"><span class="rb">([^<]*)<\/span><span class="rt">([^<]*)<\/span><\/span>/g;
+  const hiraMatch = source.match(/<div class="hiragana"[^>]*>([\s\S]*?)<div class="romaji"/);
+  const romMatch = source.match(/<div class="romaji"[^>]*>([\s\S]*?)<\/div>/);
+  if (hiraMatch) {
+    const body = hiraMatch[1].replace(/<br\s*\/?\s*>/gi, "\n");
+    const converted = body.replace(rubyPattern, (match, rb, rt) => `${rb}(${rt})`);
+    converted.replace(/<[^>]+>/g, "").split("\n").forEach(line => {
+      const clean = line.trim();
+      if (clean && clean.length > 1) furiganaLines.push(clean);
+    });
+  }
+  if (romMatch) {
+    const body = romMatch[1].replace(/<br\s*\/?\s*>/gi, "\n");
+    const converted = body.replace(rubyPattern, (match, rb, rt) => rt);
+    converted.replace(/<[^>]+>/g, "").split("\n").forEach(line => {
+      let clean = line.trim();
+      if (!clean) return;
+      clean = clean.replace(/[\u3040-\u30ff]+/g, kana => kanaToRomaji(kana));
+      clean = clean.replace(/\s+/g, " ").trim();
+      if (clean.length > 1) romajiLines.push(clean);
+    });
+  }
+  return { furiganaLines, romajiLines };
+}
+
+async function fetchUtaTenReadings(song) {
+  const statusEl = $("#proofreadStatus");
+  const setStatus = message => {
+    if (statusEl) statusEl.textContent = message;
+  };
+  if (!song || !song.title) {
+    return { error: "当前没有可校对的歌曲" };
+  }
+  setStatus(`正在 utaten 搜索《${song.title}》…（代理抓取，约需十几秒）`);
+  const searchUrl = `https://utaten.com/search?title=${encodeURIComponent(song.title)}&artist_name=${encodeURIComponent(song.artist || "")}`;
+  const searchHtml = await fetchHtmlViaChain(searchUrl);
+  const results = extractUtaTenResults(searchHtml);
+  if (!results.length) {
+    return { error: "utaten 上没有搜到这首歌，可尝试手动粘贴注音" };
+  }
+  const best = pickBestUtaTenResult(results, song);
+  if (!best) {
+    return { error: "搜索结果与歌曲不匹配，可尝试手动粘贴注音" };
+  }
+  setStatus(`找到《${best.title}》，正在获取注音歌词…`);
+  const lyricHtml = await fetchHtmlViaChain(`https://utaten.com/lyric/${best.id}/`);
+  const parsed = extractUtaTenLyric(lyricHtml);
+  if (!parsed.furiganaLines.length) {
+    return { error: "歌词页没有取到注音内容" };
+  }
+  setStatus("正在逐行应用 utaten 注音…");
+  const result = applyProofreadToSong(song, parsed.furiganaLines.join("\n"), parsed.romajiLines);
+  if (result.error) return result;
+  song.utatenSource = `${best.title} (utaten)`;
+  saveState();
+  renderSync();
+  renderSongs();
+  renderSongLesson();
+  return Object.assign(result, { source: `utaten · ${best.title}` });
+}
+
+function maybeAutoFetchUtaTen() {
+  if (!activeSong || activeSong.utatenAttempted) return;
+  if (activeSong.lines && activeSong.lines.length) {
+    const hasUnverified = activeSong.lines.some(line => (line.words || []).some(word => word.surface && !FUNCTION_WORDS.has(word.surface) && !word.verified));
+    if (!hasUnverified) return;
+  }
+  activeSong.utatenAttempted = true;
+  fetchUtaTenReadings(activeSong);
 }
 
 async function upgradeStoredSongs() {
@@ -3409,6 +3574,25 @@ $("#applyProofread").addEventListener("click", () => {
   renderSongLesson();
   status.textContent = `校对完成：匹配 ${result.matchedLines} 行，修正 ${result.appliedWords} 个词的读音${result.skippedLines ? `，跳过 ${result.skippedLines} 行（歌词不一致）` : ""}。`;
   toast(`已应用注音校对：${result.appliedWords} 个词`);
+});
+
+$("#autoProofread").addEventListener("click", async () => {
+  if (!activeSong) return;
+  const button = $("#autoProofread");
+  button.disabled = true;
+  try {
+    const result = await fetchUtaTenReadings(activeSong);
+    const status = $("#proofreadStatus");
+    if (!status) return;
+    if (result.error) {
+      status.textContent = result.error;
+      return;
+    }
+    status.textContent = `已完成（${result.source}）：匹配 ${result.matchedLines} 行，修正 ${result.appliedWords} 个词的读音${result.skippedLines ? `，跳过 ${result.skippedLines} 行` : ""}。`;
+    toast(`已从 utaten 应用注音：${result.appliedWords} 个词`);
+  } finally {
+    button.disabled = false;
+  }
 });
 $("#songSearchInput").addEventListener("keydown", event => {
   if (event.key === "Enter") searchSongs();

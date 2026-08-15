@@ -1214,6 +1214,12 @@ button.word-chip:hover {
   gap: 6px;
 }
 
+.proofread-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .quiz-box {
   margin-top: 14px;
   padding: 16px;
