@@ -1292,7 +1292,7 @@ function setBusy(active) {
     busyWatchdog = window.setTimeout(() => {
       busyCount = 0;
       if (bar) bar.classList.remove("active");
-    }, 60000);
+    }, 330000);
   } else {
     window.clearTimeout(busyWatchdog);
   }
@@ -2697,7 +2697,7 @@ function applyProofreadToSong(song, pastedText, romajiLines) {
 
 async function fetchHtmlViaChain(target) {
   try {
-    const direct = await fetchWithTimeout(target, 8000);
+    const direct = await fetchWithTimeout(target, 10000);
     if (direct.ok) {
       const text = await direct.text();
       if (text && text.length > 2000) return text;
@@ -2712,7 +2712,7 @@ async function fetchHtmlViaChain(target) {
   for (const proxy of proxies) {
     try {
       const encoded = encodeURIComponent(target);
-      const response = await fetchWithTimeout(proxy.url(encoded), 20000);
+      const response = await fetchWithTimeout(proxy.url(encoded), 30000);
       const text = await response.text();
       if (proxy.mode === "get") {
         try {
@@ -2862,7 +2862,7 @@ async function fetchUtaTenReadings(song) {
   let timeoutId = null;
   try {
     const timeoutPromise = new Promise(resolve => {
-      timeoutId = window.setTimeout(() => resolve({ error: "自动注音超时：utaten 代理当前不可用，已用本地注音，可手动粘贴校对" }), 25000);
+      timeoutId = window.setTimeout(() => resolve({ error: "自动注音超时：utaten 代理当前不可用，已用本地注音，可手动粘贴校对" }), 300000);
     });
     const result = await Promise.race([
       runUtaTenFetch(song, setStatus).catch(() => ({ error: "utaten 抓取失败（网络异常）" })),
@@ -3140,7 +3140,7 @@ async function enrichSongWithAI(song, options = {}) {
     setStatus("正在联网获取官方注音参考…");
     context.reference = await Promise.race([
       fetchUtaTenReferenceLines(song),
-      new Promise(resolve => window.setTimeout(() => resolve([]), 20000))
+      new Promise(resolve => window.setTimeout(() => resolve([]), 300000))
     ]);
   }
   const batchSize = 1;
@@ -3370,7 +3370,7 @@ async function aiProofreadReadings(song, options = {}) {
   if (!context.reference.length) {
     context.reference = await Promise.race([
       fetchUtaTenReferenceLines(song),
-      new Promise(resolve => window.setTimeout(() => resolve([]), 20000))
+      new Promise(resolve => window.setTimeout(() => resolve([]), 300000))
     ]);
   }
   const pending = [];
