@@ -2696,6 +2696,18 @@ function applyProofreadToSong(song, pastedText, romajiLines) {
 }
 
 async function fetchHtmlViaChain(target) {
+  const proxyBase = state.aiConfig && state.aiConfig.proxyUrl ? state.aiConfig.proxyUrl.replace(/\/+$/, "") : "";
+  if (proxyBase && target.startsWith("https://utaten.com/")) {
+    try {
+      const response = await fetchWithTimeout(`${proxyBase}/utaten?url=${encodeURIComponent(target)}`, 30000);
+      if (response.ok) {
+        const text = await response.text();
+        if (text && text.length > 2000) return text;
+      }
+    } catch (error) {
+      // 代理不可用，继续后续链
+    }
+  }
   try {
     const direct = await fetchWithTimeout(target, 10000);
     if (direct.ok) {
@@ -4236,6 +4248,7 @@ function renderAiSettings() {
   $("#aiBaseUrl").value = config.baseUrl || "";
   $("#aiModel").value = config.model || "";
   $("#aiKey").value = config.apiKey || "";
+  $("#aiProxyUrl").value = (config.proxyUrl || "");
   const status = $("#aiStatus");
   if (status) {
     const note = AI_PROVIDER_NOTES[config.provider];
@@ -4245,14 +4258,6 @@ function renderAiSettings() {
   }
 }
 
-$("#aiProvider").addEventListener("change", () => {
-  const provider = $("#aiProvider").value;
-  const preset = AI_PRESETS[provider];
-  if (preset && provider !== "custom") {
-    $("#aiBaseUrl").value = preset.baseUrl;
-    $("#aiModel").value = preset.model;
-  }
-});
 
 $("#saveAiConfig").addEventListener("click", () => {
   const provider = $("#aiProvider").value;
@@ -4267,7 +4272,8 @@ $("#saveAiConfig").addEventListener("click", () => {
     provider,
     apiKey,
     baseUrl: $("#aiBaseUrl").value.trim() || preset.baseUrl || "",
-    model: $("#aiModel").value.trim() || preset.model || ""
+    model: $("#aiModel").value.trim() || preset.model || "",
+    proxyUrl: $("#aiProxyUrl").value.trim() || ""
   };
   saveState();
   status.textContent = "配置已保存";
@@ -4308,6 +4314,15 @@ $("#clearAiConfig").addEventListener("click", () => {
   saveState();
   renderAiSettings();
   toast("AI 配置已清除");
+});
+
+$("#aiProvider").addEventListener("change", () => {
+  const provider = $("#aiProvider").value;
+  const preset = AI_PRESETS[provider];
+  if (preset && provider !== "custom") {
+    $("#aiBaseUrl").value = preset.baseUrl;
+    $("#aiModel").value = preset.model;
+  }
 });
 
 $("#songSearchInput").addEventListener("keydown", event => {
