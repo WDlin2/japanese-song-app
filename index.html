@@ -138,6 +138,22 @@
         </div>
         <div class="lesson-body" id="songLessonBody"></div>
       </article>
+
+      <article class="panel proofread-panel">
+        <div class="panel-head">
+          <div>
+            <span class="eyebrow">发音校对</span>
+            <h3 id="proofreadTitle">粘贴带注音的歌词，修正假名与罗马音</h3>
+          </div>
+          <span class="ghost-btn" data-jump="sync">去导入更多歌</span>
+        </div>
+        <div class="sync-body">
+          <p class="sync-status">从 utaten / 歌ネット 等网站复制带注音的歌词粘贴到这里，程序会逐行匹配并应用站方注音（格式：漢字(かな)）。校对过的词显示 ✔，灰色带 ? 的词是自动推测、未被确认的读音。</p>
+          <textarea id="proofreadInput" rows="6" placeholder="夢(ゆめ)ならばどれほどよかったでしょう&#10;未だに(いまだに)あなたのことを夢(ゆめ)にみる"></textarea>
+          <button class="primary-btn" id="applyProofread">应用注音校对</button>
+          <p class="sync-status" id="proofreadStatus"></p>
+        </div>
+      </article>
     </section>
 
     <section id="view-grammar" class="view">

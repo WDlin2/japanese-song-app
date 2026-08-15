@@ -1,4 +1,4 @@
-const CACHE_NAME = "utago-learn-v3";
+const CACHE_NAME = "utago-learn-v4";
 const ASSETS = [
   "./",
   "./index.html",

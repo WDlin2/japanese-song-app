@@ -1119,7 +1119,7 @@ button.word-chip:hover {
 
 .vocab-row {
   display: grid;
-  grid-template-columns: 74px 100px 1fr;
+  grid-template-columns: 74px 100px 1fr 32px;
   gap: 10px;
   align-items: center;
   padding: 9px 0;
@@ -1137,6 +1137,81 @@ button.word-chip:hover {
 
 .vocab-row span {
   color: var(--muted);
+}
+
+.kana-edit-btn {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--teal);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.kana-edit-btn:hover {
+  background: var(--teal-soft);
+}
+
+.badge-row {
+  display: flex;
+  gap: 6px;
+  margin: -6px 0 10px;
+}
+
+.verify-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--gold-soft);
+  color: var(--ink);
+  border: 1px solid #e8cf9c;
+  font-size: 11px;
+  font-weight: 700;
+  vertical-align: middle;
+}
+
+.verify-badge.ok {
+  background: #e7f6ec;
+  border-color: #bfe6cd;
+  color: var(--teal);
+}
+
+.verify-badge.warn {
+  background: var(--panel);
+  border-color: var(--line);
+  color: var(--muted);
+}
+
+.word-chip.uncertain {
+  border-style: dashed;
+  border-color: rgba(255, 255, 255, 0.35);
+  opacity: 0.85;
+}
+
+.proofread-panel textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.7;
+  resize: vertical;
+  box-sizing: border-box;
+  margin-bottom: 10px;
+}
+
+.proofread-panel .sync-body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
 }
 
 .quiz-box {

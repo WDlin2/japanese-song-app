@@ -996,7 +996,6 @@ const FUNCTION_WORDS = new Set([
   "そして", "それで", "だから", "でも", "まで", "から", "だけ", "より", "ほど",
   "ば", "たら", "なら", "に", "の", "が", "で", "も", "と", "を", "は", "へ"
 ]);
-
 const COMMON_GLOSS = {
   "私": { kana: "わたし", zh: "我" },
   "僕": { kana: "ぼく", zh: "我（男性）" },
@@ -1033,6 +1032,8 @@ const COMMON_GLOSS = {
   "出会い": { kana: "であい", zh: "相遇" },
   "別れ": { kana: "わかれ", zh: "离别" },
   "思い出": { kana: "おもいで", zh: "回忆" },
+  "思い出して": { kana: "おもいだして", zh: "想起（思い出す 的て形）" },
+  "思い出す": { kana: "おもいだす", zh: "想起" },
   "想い": { kana: "おもい", zh: "思念" },
   "記憶": { kana: "きおく", zh: "记忆" },
   "笑顔": { kana: "えがお", zh: "笑容" },
@@ -1251,7 +1252,16 @@ const COMMON_GLOSS = {
   "必要": { kana: "ひつよう", zh: "必要" },
   "いっぱい": { kana: "いっぱい", zh: "满满的 / 很多" },
   "たくさん": { kana: "たくさん", zh: "很多" },
-  "もう一度": { kana: "もういちど", zh: "再一次" }
+  "もう一度": { kana: "もういちど", zh: "再一次" },
+  "ならば": { kana: "ならば", zh: "如果是…的话" },
+  "こと": { kana: "こと", zh: "事情 /（名词化）" },
+  "もの": { kana: "もの", zh: "东西 / 事物" },
+  "とき": { kana: "とき", zh: "时候" },
+  "ため": { kana: "ため", zh: "为了 / 因为" },
+  "よう": { kana: "よう", zh: "样子 / 好像" },
+  "まま": { kana: "まま", zh: "保持原样" },
+  "くらい": { kana: "くらい", zh: "大约 / 程度" },
+  "ぐらい": { kana: "ぐらい", zh: "大约 / 程度" }
 };
 
 const PHRASES = [
@@ -1572,6 +1582,10 @@ function renderPlan() {
 function renderSongLesson() {
   if (!activeSong) return;
   $("#songLessonTitle").textContent = `${activeSong.title} · ${activeSong.artist}`;
+  const proofreadTitle = $("#proofreadTitle");
+  if (proofreadTitle) proofreadTitle.textContent = activeSong.proofread
+    ? `《${activeSong.title}》已校对 ${activeSong.lines ? activeSong.lines.filter(line => line.proofread).length : 0}/${activeSong.lines ? activeSong.lines.length : 0} 行，可重复校对`
+    : `为《${activeSong.title}》校对发音`;
   const lines = activeSong.lines || [];
   if (lyricIndex >= lines.length) lyricIndex = 0;
   const grammarPoints = (activeSong.grammarPointIds || [])
@@ -1600,7 +1614,8 @@ function renderSongLesson() {
       </div>
       <div class="lyric-stage">
         <blockquote id="activeLineJa">${activeSong.lyric}</blockquote>
-        <p class="romaji" id="activeLineRomaji">${activeSong.romaji}</p>
+        <p class="romaji" id="activeLineRomaji"></p>
+        <div class="badge-row" id="lineBadge"></div>
         <p class="trans" id="activeLineZh">${activeSong.zh}</p>
         <div class="word-chips" id="activeLineWords"></div>
         <div class="line-grammar" id="lineGrammar"></div>
@@ -1609,9 +1624,14 @@ function renderSongLesson() {
     </div>
     <div class="lesson-grid">
       <div class="lesson-box">
-        <h5>单词</h5>
+        <h5>单词${activeSong.vocab && activeSong.vocab.length ? `（${activeSong.vocab.filter(v => v.verified).length}/${activeSong.vocab.length} 已确认读音）` : ""}</h5>
         ${activeSong.vocab && activeSong.vocab.length ? activeSong.vocab.map(v => `
-          <div class="vocab-row"><strong>${v.ja}</strong><span>${v.kana}</span><span>${v.zh}</span></div>
+          <div class="vocab-row">
+            <strong>${v.ja}</strong>
+            <span>${v.kana || "…"}${v.verified ? "" : " ?"}</span>
+            <span>${v.zh}</span>
+            <button class="kana-edit-btn" data-edit-kana="${v.ja}" title="手动修正假名">✎</button>
+          </div>
         `).join("") : `<p>暂无自动词卡，歌词里的重点词会在你补充学习笔记后逐步积累。</p>`}
       </div>
       <div class="lesson-box">
@@ -1664,10 +1684,16 @@ function renderActiveLyricLine() {
   $("#activeLineRomaji").textContent = line.romaji || "";
   $("#activeLineZh").textContent = line.zh || "（暂无中文翻译，可在导入页补全）";
   $("#lineCounter").textContent = `${lyricIndex + 1} / ${lines.length}`;
+  const badge = line.proofread
+    ? `<span class="verify-badge ok">✔ 已校对</span>`
+    : (line.romajiFrom === "klyric"
+      ? `<span class="verify-badge">原曲罗马音</span>`
+      : `<span class="verify-badge warn">读音未校对</span>`);
+  $("#lineBadge").innerHTML = badge;
   const chips = (line.words || []).filter(word => !FUNCTION_WORDS.has(word.surface)).map(word => `
-    <button class="word-chip" data-speak="${(word.kana || word.surface).replace(/"/g, "")}">
+    <button class="word-chip ${word.verified ? "" : "uncertain"}" data-speak="${(word.kana || word.surface).replace(/"/g, "")}" title="${word.verified ? "" : "读音未经确认：可点单词卡上的 ✎ 手动修正，或用下方校对面板粘贴带注音的歌词"}">
       <strong>${word.surface}</strong>
-      <small>${word.kana || "…"} · ${(word.zh && word.zh !== "未收录") ? word.zh : "…"}</small>
+      <small>${word.kana || "…"}${word.verified ? "" : " ?"} · ${(word.zh && word.zh !== "未收录") ? word.zh : "…"}</small>
     </button>
   `).join("");
   $("#activeLineWords").innerHTML = chips || `<span class="word-chip"><strong>${line.ja}</strong><small>点右上角播放听原句</small></span>`;
@@ -1808,7 +1834,7 @@ function renderCustomSongs() {
       <div class="custom-song">
         <div>
           <h4>${song.title}</h4>
-          <p>${song.artist} · ${song.lines && song.lines.length ? `${song.lines.length} 句歌词` : "还没有歌词"}</p>
+          <p>${song.artist} · ${song.lines && song.lines.length ? `${song.lines.length} 句歌词` : "还没有歌词"}${song.proofread ? `<span class="track-tag match">已校对</span>` : ""}</p>
         </div>
         <div class="custom-actions">
           <button class="primary-btn" data-custom-open="${song.id}">开始学习</button>
@@ -1955,6 +1981,7 @@ async function fetchLyricsForTrack(index) {
   renderSync();
   renderSongs();
   status.textContent = `已获取 ${track.title} 的 ${lines.length} 句歌词，可以开始学习了。`;
+  autoVerifyReadings(existing || songData);
 }
 
 async function importLyricsFromForm() {
@@ -2024,6 +2051,7 @@ async function importLyricsFromForm() {
   switchView("songs");
   if (statusEl) statusEl.textContent = `已解析 ${enriched.lines.length} 句歌词：拆出 ${enriched.vocab.length} 个生词，匹配 ${enriched.grammarPointIds.length} 个语法点。`;
   toast("歌词已保存，开始学习吧");
+  autoVerifyReadings(customSong);
 }
 
 async function fetchWithTimeout(url, timeout = 8000, options = {}) {
@@ -2087,13 +2115,20 @@ function parseLrcToEntries(lrcText) {
 function parseLyricResponse(data) {
   const original = parseLrcToEntries(data && data.lrc && data.lrc.lyric);
   const translated = parseLrcToEntries(data && data.tlyric && data.tlyric.lyric);
+  const karaoke = parseLrcToEntries(data && data.klyric && data.klyric.lyric);
   const translationMap = new Map(translated.map(item => [Math.round(item.time * 10), item.text]));
-  return original.map(item => ({
-    ja: item.text,
-    romaji: "",
-    zh: translationMap.get(Math.round(item.time * 10)) || "",
-    words: []
-  }));
+  const karaokeMap = new Map(karaoke.map(item => [Math.round(item.time * 10), item.text]));
+  return original.map(item => {
+    const timeKey = Math.round(item.time * 10);
+    const klyricText = karaokeMap.get(timeKey) || "";
+    return {
+      ja: item.text,
+      romaji: klyricText || "",
+      romajiFrom: klyricText ? "klyric" : "",
+      zh: translationMap.get(timeKey) || "",
+      words: []
+    };
+  });
 }
 
 function tokenizeJapanese(text) {
@@ -2134,19 +2169,19 @@ function stemJapaneseToken(token) {
 function lookupLocalWord(token) {
   const exactWord = WORDS.find(word => word.ja === token || word.kana === token);
   if (exactWord) {
-    return { ja: token, kana: exactWord.kana || "", zh: exactWord.zh };
+    return { ja: token, kana: exactWord.kana || "", zh: exactWord.zh, source: "dict", verified: true };
   }
   const exactGloss = COMMON_GLOSS[token];
   if (exactGloss) {
-    return { ja: token, kana: exactGloss.kana, zh: exactGloss.zh };
+    return { ja: token, kana: exactGloss.kana, zh: exactGloss.zh, source: "dict", verified: true };
   }
   const stem = stemJapaneseToken(token);
   const stemGloss = COMMON_GLOSS[stem];
   if (stemGloss) {
-    return { ja: token, kana: stemGloss.kana, zh: stemGloss.zh };
+    return { ja: token, kana: stemGloss.kana, zh: stemGloss.zh, source: "stem", verified: false };
   }
   if (state.wordCache[token]) {
-    return { ja: token, kana: state.wordCache[token].kana || "", zh: state.wordCache[token].zh || "" };
+    return { ja: token, kana: state.wordCache[token].kana || "", zh: state.wordCache[token].zh || "", source: state.wordCache[token].source || "cache", verified: Boolean(state.wordCache[token].verified) };
   }
   return null;
 }
@@ -2194,6 +2229,10 @@ function combineKanaWithSmall(base, small) {
     return ["sh", "ch", "j"].includes(cons) ? cons + SMALL_Y[small] : cons + "y" + SMALL_Y[small];
   }
   return cons + SMALL_VOWEL[small];
+}
+
+function kanaToHiragana(text) {
+  return String(text || "").replace(/[\u30a1-\u30f6]/g, char => String.fromCharCode(char.charCodeAt(0) - 0x60));
 }
 
 function kanaToRomaji(text) {
@@ -2369,8 +2408,8 @@ async function enrichLyricLines(lines) {
       }
       const remote = await lookupJishoWord(token);
       if (remote) {
-        results[index] = remote;
-        state.wordCache[token] = remote;
+        results[index] = Object.assign(remote, { source: "jotoba", verified: false });
+        state.wordCache[token] = results[index];
         consecutiveFails = 0;
       } else {
         results[index] = { ja: token, kana: "", zh: "未收录" };
@@ -2389,13 +2428,22 @@ async function enrichLyricLines(lines) {
       if (FUNCTION_WORDS.has(word.surface)) {
         word.kana = word.surface;
         word.zh = "";
+        word.verified = true;
+        word.source = "kana";
         return;
       }
       const info = wordMap.get(word.surface) || { ja: word.surface, kana: "", zh: "" };
       word.kana = info.kana || "";
       word.zh = info.zh || "";
+      word.verified = Boolean(info.verified) && Boolean(info.kana);
+      word.source = info.source || "unknown";
+      if (!/[\u3400-\u9fff]/.test(word.surface) && !FUNCTION_WORDS.has(word.surface)) {
+        word.kana = word.surface;
+        word.verified = true;
+        word.source = "kana";
+      }
       if (info.zh && info.zh !== "未收录" && !vocabMap.has(word.surface)) {
-        vocabMap.set(word.surface, { ja: word.surface, kana: info.kana || "", zh: info.zh });
+        vocabMap.set(word.surface, { ja: word.surface, kana: info.kana || "", zh: info.zh, source: info.source || "unknown", verified: word.verified });
       }
     });
     if (!line.romaji) line.romaji = buildLineRomaji(line);
@@ -2417,6 +2465,254 @@ async function fetchAndParseSongLyrics(song) {
   return enrichLyricLines(lines);
 }
 
+let kuromojiPromise = null;
+let kuromojiTokenizer = null;
+
+function loadKuromoji() {
+  if (kuromojiPromise) return kuromojiPromise;
+  if (typeof document === "undefined") return Promise.resolve(null);
+  kuromojiPromise = new Promise(resolve => {
+    const bases = [
+      "https://cdn.jsdelivr.net/npm/kuromoji@0.1.2",
+      "https://unpkg.com/kuromoji@0.1.2"
+    ];
+    let index = 0;
+    function tryBase() {
+      if (index >= bases.length) {
+        kuromojiPromise = null;
+        resolve(null);
+        return;
+      }
+      const base = bases[index++];
+      const script = document.createElement("script");
+      script.src = `${base}/build/kuromoji.js`;
+      script.onload = () => {
+        try {
+          kuromoji.builder({ dicPath: `${base}/dict` }).build((error, tokenizer) => {
+            if (error || !tokenizer) {
+              kuromojiPromise = null;
+              resolve(null);
+            } else {
+              kuromojiTokenizer = tokenizer;
+              resolve(tokenizer);
+            }
+          });
+        } catch (error) {
+          kuromojiPromise = null;
+          resolve(null);
+        }
+      };
+      script.onerror = () => {
+        script.remove();
+        tryBase();
+      };
+      document.head.appendChild(script);
+    }
+    tryBase();
+  });
+  return kuromojiPromise;
+}
+
+function applyKuromojiReadings(lines) {
+  if (!kuromojiTokenizer) return 0;
+  let applied = 0;
+  lines.forEach(line => {
+    if (!line.ja) return;
+    let kuromojiTokens;
+    try {
+      kuromojiTokens = kuromojiTokenizer.tokenize(line.ja);
+    } catch (error) {
+      return;
+    }
+    let offset = 0;
+    const positioned = kuromojiTokens.map(token => {
+      const index = line.ja.indexOf(token.surface_form, offset);
+      const start = index < 0 ? offset : index;
+      offset = Math.max(offset, start + token.surface_form.length);
+      return {
+        start,
+        end: offset,
+        reading: token.reading ? kanaToHiragana(token.reading) : token.surface_form
+      };
+    });
+    let pointer = 0;
+    let pos = 0;
+    line.words.forEach(word => {
+      if (word.verified) {
+        const found = line.ja.indexOf(word.surface, pos);
+        if (found >= 0) pos = found + word.surface.length;
+        return;
+      }
+      const start = line.ja.indexOf(word.surface, pos);
+      if (start < 0) return;
+      const end = start + word.surface.length;
+      pos = end;
+      while (pointer < positioned.length && positioned[pointer].end <= start) pointer += 1;
+      const covering = [];
+      let probe = pointer;
+      while (probe < positioned.length && positioned[probe].start < end) {
+        covering.push(positioned[probe]);
+        probe += 1;
+      }
+      if (covering.length && covering[0].start <= start && covering[covering.length - 1].end >= end) {
+        const joined = covering.map(item => item.reading).join("");
+        if (joined && !/[\u3400-\u9fff]/.test(joined)) {
+          word.kana = joined;
+          word.verified = true;
+          word.source = "kuromoji";
+          applied += 1;
+        }
+      }
+    });
+  });
+  return applied;
+}
+
+function syncVocabFromLines(song) {
+  if (!song || !song.lines) return;
+  (song.vocab || []).forEach(entry => {
+    let found = null;
+    song.lines.some(line => {
+      const word = (line.words || []).find(item => item.surface === entry.ja);
+      if (word && word.kana) {
+        found = word;
+        return true;
+      }
+      return false;
+    });
+    if (found) {
+      entry.kana = found.kana;
+      entry.verified = found.verified;
+      entry.source = found.source;
+    }
+  });
+}
+
+async function autoVerifyReadings(song) {
+  if (!song || !song.lines || !song.lines.length) return;
+  const tokenizer = await loadKuromoji();
+  if (!tokenizer) return;
+  const applied = applyKuromojiReadings(song.lines);
+  if (!applied) return;
+  syncVocabFromLines(song);
+  saveState();
+  renderSongLesson();
+}
+
+function normalizeLyric(text) {
+  return String(text || "")
+    .replace(/[（(][\u3040-\u30ffー～〜]+[)）]/g, "")
+    .replace(/[\s\u3000、。，．,\.！？!?…「」『』()（）]/g, "")
+    .toLowerCase();
+}
+
+function parseFuriganaLine(text) {
+  const runs = [];
+  let plain = "";
+  const regex = /([\u3400-\u9fff][\u3400-\u9fff\u3040-\u30ff]*?)\s*[（(]([\u3040-\u30ffー～〜]+)[)）]/g;
+  let last = 0;
+  let match;
+  let plainPos = 0;
+  while ((match = regex.exec(text)) !== null) {
+    plain += text.slice(last, match.index);
+    plainPos += match.index - last;
+    const start = plainPos;
+    plain += match[1];
+    plainPos += match[1].length;
+    runs.push({
+      kanji: match[1],
+      kana: kanaToHiragana(match[2]),
+      start,
+      end: plainPos
+    });
+    last = regex.lastIndex;
+  }
+  plain += text.slice(last);
+  return { plain, runs, norm: normalizeLyric(plain) };
+}
+
+function applyProofreadToSong(song, pastedText) {
+  const pasted = String(pastedText || "").split("\n")
+    .map(line => parseFuriganaLine(line))
+    .filter(line => line.norm && line.runs.length);
+  if (!pasted.length) {
+    return { matchedLines: 0, appliedWords: 0, skippedLines: 0, error: "没有识别到 漢字(かな) 格式的注音，请检查粘贴内容" };
+  }
+  let matchedLines = 0;
+  let appliedWords = 0;
+  let skippedLines = 0;
+  song.lines.forEach(songLine => {
+    const norm = normalizeLyric(songLine.ja);
+    if (!norm) return;
+    const hit = pasted.find(line => line.norm === norm) || pasted.find(line => {
+      if (Math.abs(line.norm.length - norm.length) > 3) return false;
+      let same = 0;
+      for (let i = 0; i < Math.min(line.norm.length, norm.length); i += 1) {
+        if (line.norm[i] === norm[i]) same += 1;
+      }
+      return same >= Math.min(line.norm.length, norm.length) * 0.8;
+    });
+    if (!hit) {
+      skippedLines += 1;
+      return;
+    }
+    matchedLines += 1;
+    songLine.proofread = true;
+    const { plain: rawPlain, runs } = hit;
+    songLine.words.forEach(word => {
+      if (FUNCTION_WORDS.has(word.surface)) {
+        word.kana = word.surface;
+        word.verified = true;
+        word.source = "kana";
+        return;
+      }
+      const start = rawPlain.indexOf(word.surface);
+      if (start < 0) return;
+      const end = start + word.surface.length;
+      const fullRun = runs.find(run => run.start <= start && run.end >= end);
+      if (fullRun) {
+        word.kana = fullRun.kana;
+        word.verified = true;
+        word.source = "proofread";
+        appliedWords += 1;
+        return;
+      }
+      const headRun = runs.find(run => run.start <= start && run.end > start);
+      if (headRun && headRun.end < end) {
+        const rest = word.surface.slice(headRun.end - start);
+        if (rest && !/[\u3400-\u9fff]/.test(rest)) {
+          word.kana = headRun.kana.endsWith(rest) ? headRun.kana : headRun.kana + rest;
+          word.verified = true;
+          word.source = "proofread";
+          appliedWords += 1;
+        }
+      }
+    });
+    let lineKana = "";
+    let cursor = 0;
+    runs.forEach(run => {
+      lineKana += rawPlain.slice(cursor, run.start);
+      lineKana += run.kana;
+      cursor = run.end;
+    });
+    lineKana += rawPlain.slice(cursor);
+    if (!/[\u3400-\u9fff]/.test(lineKana)) {
+      songLine.kana = lineKana;
+      const nonFunction = songLine.words.filter(word => !FUNCTION_WORDS.has(word.surface));
+      const wordsRomaji = nonFunction.length && nonFunction.every(word => word.kana)
+        ? songLine.words.map(word => kanaToRomaji(word.kana || "")).filter(Boolean).join(" ")
+        : kanaToRomaji(lineKana);
+      songLine.romaji = wordsRomaji;
+      songLine.romajiFrom = "proofread";
+    }
+  });
+  if (matchedLines) {
+    song.proofread = true;
+    syncVocabFromLines(song);
+  }
+  return { matchedLines, appliedWords, skippedLines };
+}
+
 async function upgradeStoredSongs() {
   const pending = state.customSongs.filter(song => song.lines && song.lines.length && !song.enriched);
   for (const song of pending) {
@@ -2431,6 +2727,7 @@ async function upgradeStoredSongs() {
       song.answer = (enriched.quiz && enriched.quiz.answer) || null;
       song.enriched = true;
       saveState();
+      autoVerifyReadings(song);
     } catch (error) {
       song.enriched = true;
     }
@@ -2519,6 +2816,7 @@ async function handleSearchSong(index) {
   renderSongs();
   switchView("songs");
   toast(`已解析《${song.title}》，共 ${parsed.lines.length} 句歌词`);
+  autoVerifyReadings(activeSong);
 }
 
 async function reparseCustomSong(id) {
@@ -2539,6 +2837,7 @@ async function reparseCustomSong(id) {
     renderSync();
     renderSongs();
     toast(`已重新解析：${enriched.vocab.length} 个生词 · ${enriched.grammarPointIds.length} 个语法点`);
+    autoVerifyReadings(song);
   } catch (error) {
     toast("重新解析失败，请检查网络");
   }
@@ -2822,6 +3121,44 @@ document.addEventListener("click", event => {
     return;
   }
 
+  const editKanaButton = event.target.closest("[data-edit-kana]");
+  if (editKanaButton) {
+    const surface = editKanaButton.dataset.editKana;
+    const current = (activeSong.vocab || []).find(entry => entry.ja === surface);
+    const currentKana = current && current.kana ? current.kana : "";
+    const corrected = window.prompt(`修正「${surface}」的假名：`, currentKana);
+    if (corrected === null) return;
+    const kana = corrected.trim().replace(/[\u3400-\u9fff\s]/g, "");
+    if (!kana) {
+      toast("假名不能为空");
+      return;
+    }
+    activeSong.lines.forEach(line => {
+      (line.words || []).forEach(word => {
+        if (word.surface === surface) {
+          word.kana = kana;
+          word.verified = true;
+          word.source = "manual";
+        }
+      });
+    });
+    (activeSong.vocab || []).forEach(entry => {
+      if (entry.ja === surface) {
+        entry.kana = kana;
+        entry.verified = true;
+        entry.source = "manual";
+      }
+    });
+    state.wordCache[surface] = { ja: surface, kana, zh: current ? current.zh : "", source: "manual", verified: true };
+    activeSong.lines.forEach(line => {
+      if (line.romajiFrom !== "proofread") line.romaji = buildLineRomaji(line);
+    });
+    saveState();
+    renderSongLesson();
+    toast(`已保存「${surface}」的假名：${kana}`);
+    return;
+  }
+
   const speakButton = event.target.closest("[data-speak]");
   if (speakButton) {
     speak(speakButton.dataset.speak);
@@ -3052,6 +3389,27 @@ $("#syncPlaylist").addEventListener("click", syncPlaylist);
 $("#importSongList").addEventListener("click", importSongListText);
 $("#importLyrics").addEventListener("click", importLyricsFromForm);
 $("#searchSong").addEventListener("click", searchSongs);
+
+$("#applyProofread").addEventListener("click", () => {
+  if (!activeSong) return;
+  const result = applyProofreadToSong(activeSong, $("#proofreadInput").value);
+  const status = $("#proofreadStatus");
+  if (!status) return;
+  if (result.error) {
+    status.textContent = result.error;
+    return;
+  }
+  if (!result.matchedLines) {
+    status.textContent = `没有匹配到任何一行。已跳过 ${result.skippedLines} 行。请检查粘贴内容是否与歌词一致（可含标点，会自动忽略）。`;
+    return;
+  }
+  saveState();
+  renderSync();
+  renderSongs();
+  renderSongLesson();
+  status.textContent = `校对完成：匹配 ${result.matchedLines} 行，修正 ${result.appliedWords} 个词的读音${result.skippedLines ? `，跳过 ${result.skippedLines} 行（歌词不一致）` : ""}。`;
+  toast(`已应用注音校对：${result.appliedWords} 个词`);
+});
 $("#songSearchInput").addEventListener("keydown", event => {
   if (event.key === "Enter") searchSongs();
 });
