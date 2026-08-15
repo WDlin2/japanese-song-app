@@ -1330,11 +1330,19 @@ let editingCustomId = null;
 let lastSearchResults = [];
 let utatenFetching = false;
 let busyCount = 0;
+let busyWatchdog = null;
 
 function setBusy(active) {
   busyCount = Math.max(0, busyCount + (active ? 1 : -1));
   const bar = document.getElementById("busyBar");
   if (bar) bar.classList.toggle("active", busyCount > 0);
+  if (active) {
+    window.clearTimeout(busyWatchdog);
+    busyWatchdog = window.setTimeout(() => {
+      busyCount = 0;
+      if (bar) bar.classList.remove("active");
+    }, 90000);
+  }
 }
 
 function escapeHtml(text) {
@@ -1498,6 +1506,10 @@ function switchView(view) {
   $$(".tab-btn").forEach(btn => btn.classList.toggle("active", btn.dataset.view === view));
   $$(".view").forEach(section => section.classList.toggle("active", section.id === `view-${view}`));
   renderView(view);
+  if (view === "songs" && !upgradeQueued && state.customSongs.some(song => song.lines && song.lines.length && !song.enriched)) {
+    upgradeQueued = true;
+    upgradeStoredSongs();
+  }
 }
 
 function renderView(view) {
@@ -2831,7 +2843,7 @@ async function fetchHtmlViaChain(target) {
   for (const proxy of proxies) {
     try {
       const encoded = encodeURIComponent(target);
-      const response = await fetchWithTimeout(proxy.url(encoded), 25000);
+      const response = await fetchWithTimeout(proxy.url(encoded), 20000);
       const text = await response.text();
       if (proxy.mode === "get") {
         try {
@@ -2968,6 +2980,9 @@ async function fetchUtaTenReadings(song) {
   }
 }
 
+let utatenFetchTimer = null;
+let upgradeQueued = false;
+
 function maybeAutoFetchUtaTen() {
   if (!activeSong || !activeSong.isCustom || activeSong.utatenAttempted) return;
   if (utatenFetching) return;
@@ -2975,16 +2990,22 @@ function maybeAutoFetchUtaTen() {
   if (!activeSong.lines || !activeSong.lines.length) return;
   const hasUnverified = activeSong.lines.some(line => (line.words || []).some(word => word.surface && !FUNCTION_WORDS.has(word.surface) && word.verified === false));
   if (!hasUnverified) return;
-  activeSong.utatenAttempted = true;
-  fetchUtaTenReadings(activeSong);
+  const targetSong = activeSong;
+  window.clearTimeout(utatenFetchTimer);
+  utatenFetchTimer = window.setTimeout(() => {
+    if (activeSong !== targetSong) return;
+    targetSong.utatenAttempted = true;
+    fetchUtaTenReadings(targetSong);
+  }, 1200);
 }
 
 async function upgradeStoredSongs() {
   if (typeof navigator !== "undefined" && navigator.onLine === false) return;
-  const pending = state.customSongs.filter(song => song.lines && song.lines.length && !song.enriched).slice(0, 3);
+  if (utatenFetching || busyCount > 0) return;
+  const pending = state.customSongs.filter(song => song.lines && song.lines.length && !song.enriched).slice(0, 1);
   for (const song of pending) {
     await finishEnrichInBackground(song);
-    await new Promise(resolve => window.setTimeout(resolve, 800));
+    await new Promise(resolve => window.setTimeout(resolve, 400));
   }
   if (pending.length) {
     renderSync();
@@ -3771,4 +3792,3 @@ window.addEventListener("beforeunload", saveState);
 $("#tripDate").value = state.tripDate;
 renderAll();
 switchView(state.currentView || "songs");
-upgradeStoredSongs();
