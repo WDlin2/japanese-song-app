@@ -1,4 +1,69 @@
 const STORE_KEY = "tabi30-state-v1";
+const IDB_NAME = "utago-db";
+const IDB_STORE = "state";
+const IDB_KEY = "main";
+
+function storageIdbSave(data) {
+  return new Promise(resolve => {
+    try {
+      if (typeof indexedDB === "undefined") { resolve(false); return; }
+      const request = indexedDB.open(IDB_NAME, 1);
+      request.onupgradeneeded = () => {
+        const db = request.result;
+        if (!db.objectStoreNames.contains(IDB_STORE)) db.createObjectStore(IDB_STORE);
+      };
+      request.onsuccess = () => {
+        const db = request.result;
+        try {
+          const tx = db.transaction(IDB_STORE, "readwrite");
+          tx.objectStore(IDB_STORE).put(data, IDB_KEY);
+          tx.oncomplete = () => resolve(true);
+          tx.onerror = () => resolve(false);
+          tx.onabort = () => resolve(false);
+        } catch (error) {
+          resolve(false);
+        }
+      };
+      request.onerror = () => resolve(false);
+      request.onblocked = () => resolve(false);
+    } catch (error) {
+      resolve(false);
+    }
+  });
+}
+
+function storageIdbLoad() {
+  return new Promise(resolve => {
+    try {
+      if (typeof indexedDB === "undefined") { resolve(null); return; }
+      const request = indexedDB.open(IDB_NAME, 1);
+      request.onupgradeneeded = () => {
+        const db = request.result;
+        if (!db.objectStoreNames.contains(IDB_STORE)) db.createObjectStore(IDB_STORE);
+      };
+      request.onsuccess = () => {
+        const db = request.result;
+        try {
+          const tx = db.transaction(IDB_STORE, "readonly");
+          const get = tx.objectStore(IDB_STORE).get(IDB_KEY);
+          get.onsuccess = () => resolve(get.result || null);
+          get.onerror = () => resolve(null);
+        } catch (error) {
+          resolve(null);
+        }
+      };
+      request.onerror = () => resolve(null);
+      request.onblocked = () => resolve(null);
+    } catch (error) {
+      resolve(null);
+    }
+  });
+}
+
+function pruneStateForQuota(stateData) {
+  if (stateData.wordCache) stateData.wordCache = {};
+  return stateData;
+}
 
 const HIRAGANA = [
   ["あ", "a"], ["い", "i"], ["う", "u"], ["え", "e"], ["お", "o"],
@@ -1368,13 +1433,45 @@ function loadState() {
 }
 
 const state = loadState();
+state.saveVersion = state.saveVersion || 0;
 
 function saveState() {
+  state.saveVersion = (state.saveVersion || 0) + 1;
+  let payload = state;
   try {
-    localStorage.setItem(STORE_KEY, JSON.stringify(state));
+    localStorage.setItem(STORE_KEY, JSON.stringify(payload));
   } catch (e) {
-    console.warn("state save failed", e);
+    try {
+      localStorage.setItem(STORE_KEY, JSON.stringify(pruneStateForQuota(JSON.parse(JSON.stringify(payload)))));
+    } catch (e2) {
+      console.warn("state save failed (quota)", e2);
+    }
   }
+  storageIdbSave(JSON.parse(JSON.stringify(payload)));
+}
+
+function migrateFromIndexedDB() {
+  storageIdbLoad().then(saved => {
+    if (!saved || typeof saved !== "object") return;
+    const currentVersion = state.saveVersion || 0;
+    const savedVersion = saved.saveVersion || 0;
+    if (savedVersion > currentVersion || !state.customSongs.length) {
+      const merged = Object.assign({
+        tripDate: defaultTripDate(),
+        completedDays: {},
+        knownWords: [],
+        customSongs: [],
+        wordCache: {},
+        kanaStats: { correct: 0, streak: 0, best: 0 },
+        currentView: "songs"
+      }, saved);
+      Object.keys(state).forEach(key => delete state[key]);
+      Object.assign(state, merged);
+      if (state.currentView === "dashboard") state.currentView = "songs";
+      renderAll();
+      switchView(state.currentView || "songs");
+    }
+  });
 }
 
 function toDateKey(date) {
@@ -4320,6 +4417,66 @@ $("#clearAiConfig").addEventListener("click", () => {
   toast("AI 配置已清除");
 });
 
+$("#exportBackup").addEventListener("click", () => {
+  const payload = {
+    app: "utago",
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    state: JSON.parse(JSON.stringify(state))
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `utago-backup-${todayKey()}.json`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+  const status = $("#backupStatus");
+  if (status) status.textContent = `已导出（${state.customSongs.length} 首歌）`;
+  toast("备份已导出");
+});
+
+$("#importBackupInput").addEventListener("change", event => {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const parsed = JSON.parse(String(reader.result || "{}"));
+      const data = parsed && parsed.state ? parsed.state : parsed;
+      if (!data || typeof data !== "object" || !Array.isArray(data.customSongs)) {
+        throw new Error("格式不正确");
+      }
+      const merged = Object.assign({
+        tripDate: defaultTripDate(),
+        completedDays: {},
+        knownWords: [],
+        customSongs: [],
+        wordCache: {},
+        kanaStats: { correct: 0, streak: 0, best: 0 },
+        currentView: "songs"
+      }, data);
+      Object.keys(state).forEach(key => delete state[key]);
+      Object.assign(state, merged);
+      if (state.currentView === "dashboard") state.currentView = "songs";
+      saveState();
+      renderAll();
+      switchView(state.currentView || "songs");
+      const status = $("#backupStatus");
+      if (status) status.textContent = `已导入 ${state.customSongs.length} 首歌`;
+      toast("备份导入成功");
+    } catch (error) {
+      const status = $("#backupStatus");
+      if (status) status.textContent = "导入失败：文件格式不正确";
+      toast("备份导入失败");
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = "";
+});
+
 $("#aiProvider").addEventListener("change", () => {
   const provider = $("#aiProvider").value;
   const preset = AI_PRESETS[provider];
@@ -4416,3 +4573,4 @@ window.addEventListener("beforeunload", saveState);
 $("#tripDate").value = state.tripDate;
 renderAll();
 switchView(state.currentView || "songs");
+migrateFromIndexedDB();

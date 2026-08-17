@@ -291,6 +291,24 @@
           <p class="sync-status" id="aiStatus"></p>
         </div>
       </article>
+
+      <article class="panel sync-panel backup-panel">
+        <div class="panel-head">
+          <div>
+            <span class="eyebrow">数据备份</span>
+            <h3>导出 / 导入学习数据</h3>
+          </div>
+        </div>
+        <div class="sync-body">
+          <p class="sync-status">所有歌曲、进度和读音都存在浏览器里。换设备或担心数据丢失前，先导出一份备份文件保存起来。</p>
+          <div class="proofread-actions">
+            <button class="secondary-btn" id="exportBackup">导出备份</button>
+            <label class="ghost-btn import-backup-label" for="importBackupInput">导入备份</label>
+            <input type="file" id="importBackupInput" accept="application/json,.json" style="display:none">
+          </div>
+          <p class="sync-status" id="backupStatus"></p>
+        </div>
+      </article>
     </section>
 
     <section id="view-anime" class="view">
