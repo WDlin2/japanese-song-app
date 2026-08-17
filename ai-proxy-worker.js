@@ -43,8 +43,10 @@ export default {
     }
     const url = new URL(request.url);
     const apiKey = UPSTREAM_KEY || env.GO_API_KEY || "";
+    // AI 通道保护：设置了 UTAGO_KEY 时，/v1/* 必须携带匹配的密钥，防止公开滥用
+    const appKey = env.UTAGO_KEY || "";
 
-    // utaten 代理：/utaten?url=https://utaten.com/...
+    // utaten 代理：/utaten?url=https://utaten.com/...（公开，仅限 utaten.com）
     if (url.pathname === "/utaten") {
       const target = url.searchParams.get("url") || "";
       if (!target.startsWith("https://utaten.com/")) {
@@ -62,6 +64,9 @@ export default {
 
     // AI 模型列表
     if (url.pathname === "/v1/models") {
+      if (appKey && request.headers.get("x-utago-key") !== appKey) {
+        return jsonResponse(JSON.stringify({ error: "unauthorized" }), 401);
+      }
       const upstream = await fetch(`${UPSTREAM_BASE}/models`, {
         headers: { "Authorization": `Bearer ${apiKey}` }
       });
@@ -71,6 +76,9 @@ export default {
 
     // AI 对话
     if (url.pathname === "/v1/chat/completions" && request.method === "POST") {
+      if (appKey && request.headers.get("x-utago-key") !== appKey) {
+        return jsonResponse(JSON.stringify({ error: "unauthorized" }), 401);
+      }
       const body = await request.text();
       const upstream = await fetch(`${UPSTREAM_BASE}/chat/completions`, {
         method: "POST",

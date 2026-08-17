@@ -2696,7 +2696,7 @@ function applyProofreadToSong(song, pastedText, romajiLines) {
 }
 
 async function fetchHtmlViaChain(target) {
-  const proxyBase = state.aiConfig && state.aiConfig.proxyUrl ? state.aiConfig.proxyUrl.replace(/\/+$/, "") : "";
+  const proxyBase = (state.aiConfig && state.aiConfig.proxyUrl) || DEFAULT_PROXY_URL;
   if (proxyBase && target.startsWith("https://utaten.com/")) {
     try {
       const response = await fetchWithTimeout(`${proxyBase}/utaten?url=${encodeURIComponent(target)}`, 30000);
@@ -2895,16 +2895,18 @@ async function fetchUtaTenReadings(song) {
 let utatenFetchTimer = null;
 let upgradeQueued = false;
 
+const DEFAULT_PROXY_URL = "https://utago-proxy.dayejixie.workers.dev";
+
 const AI_PRESETS = {
   "deepseek": { baseUrl: "https://api.deepseek.com/v1", model: "deepseek-chat" },
   "glm": { baseUrl: "https://open.bigmodel.cn/api/paas/v4", model: "glm-4-flash" },
   "qwen": { baseUrl: "https://dashscope.aliyuncs.com/compatible-mode/v1", model: "qwen-turbo" },
-  "opencode-go": { baseUrl: "https://opencode.ai/zen/go/v1", model: "deepseek-v4-flash" },
+  "opencode-go": { baseUrl: `${DEFAULT_PROXY_URL}/v1`, model: "deepseek-v4-flash" },
   "custom": { baseUrl: "", model: "" }
 };
 
 const AI_PROVIDER_NOTES = {
-  "opencode-go": "opencode-go 官方端点不支持浏览器直连，需部署 Cloudflare Worker 代理（仓库 ai-proxy-worker.js 已附带说明）：把代理地址填进下方 API 地址，Key 可随意填。"
+  "opencode-go": "已默认走部署好的代理（utago-proxy），Key 填 Worker 设置的 UTAGO_KEY。"
 };
 
 function getAiConfig() {
@@ -2915,7 +2917,8 @@ function getAiConfig() {
     provider: config.provider,
     apiKey: config.apiKey,
     baseUrl: (config.baseUrl || preset.baseUrl).replace(/\/+$/, ""),
-    model: config.model || preset.model
+    model: config.model || preset.model,
+    proxyUrl: config.proxyUrl || DEFAULT_PROXY_URL
   };
 }
 
@@ -2924,7 +2927,8 @@ async function callChatCompletions(config, messages, timeoutMs = 90000) {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${config.apiKey}`
+      "Authorization": `Bearer ${config.apiKey}`,
+      "x-utago-key": config.apiKey
     },
     body: JSON.stringify({
       model: config.model,
@@ -4248,7 +4252,7 @@ function renderAiSettings() {
   $("#aiBaseUrl").value = config.baseUrl || "";
   $("#aiModel").value = config.model || "";
   $("#aiKey").value = config.apiKey || "";
-  $("#aiProxyUrl").value = (config.proxyUrl || "");
+  $("#aiProxyUrl").value = config.proxyUrl || DEFAULT_PROXY_URL;
   const status = $("#aiStatus");
   if (status) {
     const note = AI_PROVIDER_NOTES[config.provider];
